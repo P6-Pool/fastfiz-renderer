@@ -11,3 +11,7 @@ setup(
     install_requires=requirements,
     py_modules=['fastfiz_renderer']
 )
+
+# python -m grpc_tools.protoc  --python_out=./fastfiz_renderer/compiled_protos --pyi_out=./fastfiz_renderer/compiled_protos  --grpc_python_out=./fastfiz_renderer/compiled_protos  --proto_path=./protos ./protos/api.proto
+# cd py_protos && sed -i '' 's/^(import.pb2)/from . \1/g'.py
+
