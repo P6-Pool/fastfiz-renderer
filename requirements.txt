@@ -18,3 +18,4 @@ urllib3==1.26.6
 vectormath==0.2.2
 vispy==0.10.0
 setuptools~=69.2.0
+grpcio-tools==1.62.1
