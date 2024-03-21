@@ -1,6 +1,5 @@
 from setuptools import setup, find_packages
 from setuptools.command.install import install
-from grpc_tools import protoc
 import os
 
 
@@ -11,6 +10,8 @@ class CustomInstall(install):
 
 
 def compile_protobufs():
+    from grpc_tools import protoc
+
     proto_dir = "./fastfiz-renderer-protobuffers"
     os.makedirs("fastfiz_renderer/compiled_protos", exist_ok=True)
     protoc.main(
@@ -32,6 +33,7 @@ setup(
     version="0.0.1",
     packages=find_packages(),
     license="MIT",
+    setup_requires=["grpcio-tools"],
     install_requires=requirements,
     py_modules=["fastfiz_renderer"],
     cmdclass={"install": CustomInstall},
