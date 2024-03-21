@@ -12,6 +12,6 @@ setup(
     py_modules=['fastfiz_renderer']
 )
 
-# python -m grpc_tools.protoc  --python_out=./fastfiz_renderer/compiled_protos --pyi_out=./fastfiz_renderer/compiled_protos  --grpc_python_out=./fastfiz_renderer/compiled_protos  --proto_path=./protos ./protos/api.proto
-# cd py_protos && sed -i '' 's/^(import.pb2)/from . \1/g'.py
+# python -m grpc_tools.protoc  --python_out=./fastfiz_renderer/compiled_protos --pyi_out=./fastfiz_renderer/compiled_protos  --grpc_python_out=./fastfiz_renderer/compiled_protos  --proto_path=./fastfiz-renderer-protobuffers ./fastfiz-renderer-protobuffers/api.proto
+# from . import api_pb2 as api__pb2
 

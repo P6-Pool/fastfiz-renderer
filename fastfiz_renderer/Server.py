@@ -1,11 +1,9 @@
-from .compiled_protos import api_pb2
-from .compiled_protos import api_pb2_grpc
-
 from google.protobuf import empty_pb2
 
 import grpc
 from concurrent import futures
 from .ServerHandler import ServerHandler
+from .compiled_protos import api_pb2, api_pb2_grpc
 
 
 class Server:
