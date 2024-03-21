@@ -3,6 +3,7 @@ from typing import Tuple
 import fastfiz as ff
 from p5 import *
 import vectormath as vmath
+import fastfiz_renderer.compiled_protos.api_pb2 as api_pb2
 from vectormath import Vector2
 
 from .GameBall import GameBall
@@ -30,6 +31,8 @@ class GameTable:
         self.board_marking_color = (62, 116, 99)
         self.white_color = (255, 255, 255)
         self.black_color = (0, 0, 0)
+        self.red_color = (255, 0, 0)
+        self.blue_color = (0, 0, 255)
 
         self.rolling_friction_const = rolling_friction_const
         self.sliding_friction_const = sliding_friction_const
@@ -229,6 +232,52 @@ class GameTable:
         for ball in self.game_balls:
             ball.draw(scaling, horizontal_mode, stroke_mode)
         pop()
+
+    def draw_shot_tree(self, shot_tree: api_pb2.Shot, scaling=200, horizontal_mode=False, stroke_mode=False):
+        push()
+
+        if horizontal_mode:
+            rotate(PI / 2)
+            translate(0, -int(self.length * scaling))
+
+        translate(int(self.board_pos * scaling),
+                  int(self.board_pos * scaling))
+
+        strokeWeight(2)
+        noFill()
+
+        # Leftmost
+        lm = shot_tree.leftMost
+        stroke(*self.blue_color)
+        circle(lm.x * scaling, lm.y * scaling, GameBall.RADIUS * 2 * scaling)
+
+        # Rightmost
+        rm = shot_tree.rightMost
+        stroke(*self.red_color)
+        circle(rm.x * scaling, rm.y * scaling, GameBall.RADIUS * 2 * scaling)
+
+        # GhostBall
+        rm = shot_tree.rightMost
+        stroke(*self.black_color)
+        circle(shot_tree.ghostBall.x * scaling, shot_tree.ghostBall.y * scaling, GameBall.RADIUS * 2 * scaling)
+
+
+        if shot_tree.next.IsInitialized():
+            stroke(*self.red_color)
+            line(lm.x * scaling, lm.y * scaling, shot_tree.next.rightMost.x * scaling, shot_tree.next.rightMost.y * scaling)
+            stroke(*self.blue_color)
+            line(rm.x * scaling, rm.y * scaling, shot_tree.next.leftMost.x * scaling, shot_tree.next.leftMost.y * scaling)
+            pop()
+            self.draw_shot_tree(shot_tree.next, scaling, horizontal_mode)
+        if shot_tree.branch.IsInitialized():
+            stroke(*self.red_color)
+            line(lm.x * scaling, lm.y * scaling, shot_tree.branch.rightMost.x * scaling, shot_tree.branch.rightMost.y * scaling)
+            stroke(*self.blue_color)
+            line(rm.x * scaling, rm.y * scaling, shot_tree.branch.leftMost.x * scaling, shot_tree.branch.leftMost.y * scaling)
+            pop()
+            self.draw_shot_tree(shot_tree.branch, scaling, horizontal_mode)
+
+        noStroke() if not stroke_mode else stroke(*self.black_color)
 
     def update(self, shot_requester: Optional[Callable[None, None]]):
         if self._active_shot is None:
