@@ -13,13 +13,15 @@ class ShotType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     POCKET: _ClassVar[ShotType]
     RAIL: _ClassVar[ShotType]
     STRIKE: _ClassVar[ShotType]
-    KISS: _ClassVar[ShotType]
+    KISS_LEFT: _ClassVar[ShotType]
+    KISS_RIGHT: _ClassVar[ShotType]
     BALL_BOTH: _ClassVar[ShotType]
 CUE_STRIKE: ShotType
 POCKET: ShotType
 RAIL: ShotType
 STRIKE: ShotType
-KISS: ShotType
+KISS_LEFT: ShotType
+KISS_RIGHT: ShotType
 BALL_BOTH: ShotType
 
 class ShowShotsRequest(_message.Message):

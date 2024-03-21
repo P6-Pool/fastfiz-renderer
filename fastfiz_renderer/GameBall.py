@@ -21,6 +21,7 @@ class GameBall:
     def __init__(self, radius: float, number: int, position: vmath.Vector2, state: int):
         self.number = number
         self.position = position
+        self.velocity = vmath.Vector2(0, 0)
         self.state = state
         self.color = GameBall.ball_colors[number if number <= 8 else number - 8]
         self.striped = number > 8
@@ -85,9 +86,11 @@ class GameBall:
             rotational_velocity: vmath.Vector3 = GameBall.RADIUS * vmath.Vector3(0, 0, cur_state.ang_vel.z).cross(
                 cur_state.ang_vel)
             relative_velocity = cur_state.vel + vmath.Vector2(rotational_velocity.x, rotational_velocity.y)
+            self.velocity = cur_state.vel - delta_time * gravitational_const * sliding_friction_const * relative_velocity.normalize()
             return cur_state.vel * delta_time - 0.5 * sliding_friction_const * gravitational_const * delta_time ** 2 * relative_velocity.normalize()
 
         def calc_rolling_displacement(delta_time: float) -> vmath.Vector2:
+            self.velocity = cur_state.vel - gravitational_const * rolling_friction_const *  delta_time * cur_state.vel.copy().normalize()
             return cur_state.vel * delta_time - 0.5 * rolling_friction_const * gravitational_const * delta_time ** 2 * cur_state.vel.copy().normalize()
 
         displacement = vmath.Vector2(0, 0)
@@ -103,6 +106,7 @@ class GameBall:
     def force_to_end_of_shot_pos(self, shot: ff.Shot):
         relevant_states = self._get_relevant_ball_states_from_shot(shot)
         if relevant_states:
+            self.velocity = vmath.Vector2(0, 0)
             self.position = relevant_states[-1].pos
             self.state = relevant_states[-1].state
 
