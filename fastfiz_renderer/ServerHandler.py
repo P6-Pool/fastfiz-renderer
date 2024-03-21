@@ -12,7 +12,7 @@ class ServerHandler:
     _instance = None
 
     def __init__(self, mac_mode=False, window_pos: Tuple[int, int] = (100, 100), frames_per_second: int = 60,
-                 scaling: int = 200, horizontal_mode: bool = False):
+                 scaling: int = 200, horizontal_mode: bool = False, flipped=False):
         if ServerHandler._instance is None:
             self._game_table: Optional[GameTable] = None
 
@@ -22,6 +22,7 @@ class ServerHandler:
             self._scaling: int = scaling
             self._horizontal_mode: bool = horizontal_mode
             self._stroke_mode: bool = False
+            self._flipped: bool = flipped
 
             self._shotTrees: list[api_pb2.Shot] = []
             self._active_shot_tree_idx: Optional[int] = None
@@ -48,7 +49,7 @@ class ServerHandler:
 
         def _draw():
             background(255)
-            self._game_table.draw(self._scaling * 2 if self._mac_mode else self._scaling, self._horizontal_mode,
+            self._game_table.draw(self._scaling * 2 if self._mac_mode else self._scaling, self._horizontal_mode, self._flipped,
                                   self._stroke_mode)
 
             if self._shotTrees:

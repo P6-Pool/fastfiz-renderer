@@ -30,7 +30,7 @@ class GameBall:
         self.white_color = (255, 255, 255)
         self.black_color = (0, 0, 0)
 
-    def draw(self, scaling=200, horizontal_mode=False, stroke_mode=False):
+    def draw(self, scaling=200, horizontal_mode=False, flipped=False, stroke_mode=False):
         dont_draw_states = [ff.Ball.NOTINPLAY, ff.Ball.POCKETED_NE, ff.Ball.POCKETED_E, ff.Ball.POCKETED_SE,
                             ff.Ball.POCKETED_SW, ff.Ball.POCKETED_W, ff.Ball.POCKETED_NW]
 
@@ -57,6 +57,9 @@ class GameBall:
 
             if horizontal_mode:
                 rotate(-PI / 2)
+
+            if flipped:
+                rotate(PI)
 
             ts = int(scaling / 30)
             textSize(ts)

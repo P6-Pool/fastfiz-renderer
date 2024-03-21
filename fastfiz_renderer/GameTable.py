@@ -58,10 +58,15 @@ class GameTable:
         return cls(table.TABLE_WIDTH, table.TABLE_LENGTH, table.SIDE_POCKET_WIDTH, table.CORNER_POCKET_WIDTH,
                    table.MU_ROLLING, table.MU_SLIDING, table.g, game_balls, shot_speed_factor)
 
-    def draw(self, scaling=200, horizontal_mode=False, stroke_mode=False):
+    def draw(self, scaling=200, horizontal_mode=False, flipped=False, stroke_mode=False):
         if horizontal_mode:
             rotate(PI / 2)
             translate(0, -int(self.length * scaling))
+
+        if flipped:
+            rotate(PI)
+            translate(-int(self.width * scaling), -int(self.length * scaling))
+
 
         # Wood
         fill(*self.wood_color) if not stroke_mode else fill(*self.white_color)
@@ -230,7 +235,7 @@ class GameTable:
         translate(int(self.board_pos * scaling),
                   int(self.board_pos * scaling))
         for ball in self.game_balls:
-            ball.draw(scaling, horizontal_mode, stroke_mode)
+            ball.draw(scaling, horizontal_mode, flipped, stroke_mode)
         pop()
 
     def draw_shot_tree(self, shot_tree: api_pb2.Shot, scaling=200, horizontal_mode=False, stroke_mode=False):
