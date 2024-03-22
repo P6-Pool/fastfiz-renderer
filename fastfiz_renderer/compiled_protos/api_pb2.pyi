@@ -57,7 +57,7 @@ class Point(_message.Message):
     def __init__(self, x: _Optional[float] = ..., y: _Optional[float] = ...) -> None: ...
 
 class Shot(_message.Message):
-    __slots__ = ("type", "next", "branch", "posB1", "ghostBall", "leftMost", "rightMost", "b1", "b2")
+    __slots__ = ("type", "next", "branch", "posB1", "ghostBall", "leftMost", "rightMost", "b1", "b2", "id")
     TYPE_FIELD_NUMBER: _ClassVar[int]
     NEXT_FIELD_NUMBER: _ClassVar[int]
     BRANCH_FIELD_NUMBER: _ClassVar[int]
@@ -67,6 +67,7 @@ class Shot(_message.Message):
     RIGHTMOST_FIELD_NUMBER: _ClassVar[int]
     B1_FIELD_NUMBER: _ClassVar[int]
     B2_FIELD_NUMBER: _ClassVar[int]
+    ID_FIELD_NUMBER: _ClassVar[int]
     type: ShotType
     next: Shot
     branch: Shot
@@ -76,4 +77,5 @@ class Shot(_message.Message):
     rightMost: Point
     b1: int
     b2: int
-    def __init__(self, type: _Optional[_Union[ShotType, str]] = ..., next: _Optional[_Union[Shot, _Mapping]] = ..., branch: _Optional[_Union[Shot, _Mapping]] = ..., posB1: _Optional[_Union[Point, _Mapping]] = ..., ghostBall: _Optional[_Union[Point, _Mapping]] = ..., leftMost: _Optional[_Union[Point, _Mapping]] = ..., rightMost: _Optional[_Union[Point, _Mapping]] = ..., b1: _Optional[int] = ..., b2: _Optional[int] = ...) -> None: ...
+    id: int
+    def __init__(self, type: _Optional[_Union[ShotType, str]] = ..., next: _Optional[_Union[Shot, _Mapping]] = ..., branch: _Optional[_Union[Shot, _Mapping]] = ..., posB1: _Optional[_Union[Point, _Mapping]] = ..., ghostBall: _Optional[_Union[Point, _Mapping]] = ..., leftMost: _Optional[_Union[Point, _Mapping]] = ..., rightMost: _Optional[_Union[Point, _Mapping]] = ..., b1: _Optional[int] = ..., b2: _Optional[int] = ..., id: _Optional[int] = ...) -> None: ...

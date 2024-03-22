@@ -55,7 +55,7 @@ class ServerHandler:
             if self._shotTrees:
                 self._game_table.draw_shot_tree(self._shotTrees[self._active_shot_tree_idx],
                                                 self._scaling * 2 if self._mac_mode else self._scaling,
-                                                self._horizontal_mode, self._stroke_mode)
+                                                self._horizontal_mode, self._flipped, self._stroke_mode)
 
         def _key_released(event):
             if event.key == "RIGHT":

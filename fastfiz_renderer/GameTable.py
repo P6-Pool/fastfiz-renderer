@@ -64,9 +64,8 @@ class GameTable:
             translate(0, -int(self.length * scaling))
 
         if flipped:
-            rotate(PI)
-            translate(-int(self.width * scaling), -int(self.length * scaling))
-
+            translate(0, int(self.length * scaling))
+            scale(1, -1)
 
         # Wood
         fill(*self.wood_color) if not stroke_mode else fill(*self.white_color)
@@ -238,7 +237,7 @@ class GameTable:
             ball.draw(scaling, horizontal_mode, flipped, stroke_mode)
         pop()
 
-    def draw_shot_tree(self, shot_tree: api_pb2.Shot, scaling=200, horizontal_mode=False, stroke_mode=False):
+    def draw_shot_tree(self, shot_tree: api_pb2.Shot, scaling=200, horizontal_mode=False, flipped=False, stroke_mode=False):
         push()
 
         if horizontal_mode:
@@ -253,12 +252,12 @@ class GameTable:
 
         # Leftmost
         lm = shot_tree.leftMost
-        stroke(*self.blue_color)
+        stroke(*self.red_color)
         circle(lm.x * scaling, lm.y * scaling, GameBall.RADIUS * 2 * scaling)
 
         # Rightmost
         rm = shot_tree.rightMost
-        stroke(*self.red_color)
+        stroke(*self.blue_color)
         circle(rm.x * scaling, rm.y * scaling, GameBall.RADIUS * 2 * scaling)
 
         # GhostBall
@@ -266,21 +265,60 @@ class GameTable:
         stroke(*self.black_color)
         circle(shot_tree.ghostBall.x * scaling, shot_tree.ghostBall.y * scaling, GameBall.RADIUS * 2 * scaling)
 
-
         if shot_tree.next.IsInitialized():
+            # Lines
             stroke(*self.red_color)
-            line(lm.x * scaling, lm.y * scaling, shot_tree.next.rightMost.x * scaling, shot_tree.next.rightMost.y * scaling)
-            stroke(*self.blue_color)
             line(rm.x * scaling, rm.y * scaling, shot_tree.next.leftMost.x * scaling, shot_tree.next.leftMost.y * scaling)
-            pop()
-            self.draw_shot_tree(shot_tree.next, scaling, horizontal_mode)
-        if shot_tree.branch.IsInitialized():
-            stroke(*self.red_color)
-            line(lm.x * scaling, lm.y * scaling, shot_tree.branch.rightMost.x * scaling, shot_tree.branch.rightMost.y * scaling)
             stroke(*self.blue_color)
-            line(rm.x * scaling, rm.y * scaling, shot_tree.branch.leftMost.x * scaling, shot_tree.branch.leftMost.y * scaling)
+            line(lm.x * scaling, lm.y * scaling, shot_tree.next.rightMost.x * scaling, shot_tree.next.rightMost.y * scaling)
+
+            # Id tag
+            stroke(*self.black_color)
+            push()
+            text_x_pos = shot_tree.posB1.x * scaling + (shot_tree.next.rightMost.x - shot_tree.posB1.x) * scaling / 2
+            text_y_pos = shot_tree.posB1.y * scaling + (shot_tree.next.rightMost.y - shot_tree.posB1.y) * scaling / 2
+
+            translate(int(text_x_pos), int(text_y_pos))
+            if horizontal_mode:
+                rotate(-PI / 2)
+
+            if flipped:
+                scale(1, -1)
+
+            ts = int(scaling / 30)
+            textSize(ts)
+            text(str(shot_tree.next.id), 0, ts * 0.8)
             pop()
-            self.draw_shot_tree(shot_tree.branch, scaling, horizontal_mode)
+
+            pop()
+            self.draw_shot_tree(shot_tree.next, scaling, horizontal_mode, flipped)
+        if shot_tree.branch.IsInitialized():
+            # Lines
+            stroke(*self.red_color)
+            line(rm.x * scaling, rm.y * scaling, shot_tree.branch.leftMost.x * scaling, shot_tree.branch.leftMost.y * scaling)
+            stroke(*self.blue_color)
+            line(lm.x * scaling, lm.y * scaling, shot_tree.branch.rightMost.x * scaling, shot_tree.branch.rightMost.y * scaling)
+
+            # Id tag
+            stroke(*self.black_color)
+            push()
+            text_x_pos = shot_tree.posB1.x * scaling + (shot_tree.next.rightMost.x - shot_tree.posB1.x) * scaling / 2
+            text_y_pos = shot_tree.posB1.y * scaling + (shot_tree.next.rightMost.y - shot_tree.posB1.y) * scaling / 2
+
+            translate(int(text_x_pos), int(text_y_pos))
+            if horizontal_mode:
+                rotate(-PI / 2)
+
+            if flipped:
+                scale(1, -1)
+
+            ts = int(scaling / 30)
+            textSize(ts)
+            text(str(shot_tree.next.id), 0, ts * 0.8)
+            pop()
+
+            pop()
+            self.draw_shot_tree(shot_tree.branch, scaling, horizontal_mode, flipped)
 
         noStroke() if not stroke_mode else stroke(*self.black_color)
 

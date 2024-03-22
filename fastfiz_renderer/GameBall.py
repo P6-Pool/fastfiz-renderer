@@ -59,7 +59,7 @@ class GameBall:
                 rotate(-PI / 2)
 
             if flipped:
-                rotate(PI)
+                scale(1, -1)
 
             ts = int(scaling / 30)
             textSize(ts)

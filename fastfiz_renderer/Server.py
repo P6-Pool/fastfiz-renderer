@@ -18,7 +18,7 @@ class Server:
         def ShowShots(self, request: api_pb2.ShowShotsRequest, context):
             self.outer_instance.server_handler.update_shots_trees(request.shots)
             self.outer_instance.server_handler.update_table_state(request.tableState)
-            return empty_pb2
+            return empty_pb2.Empty()
 
     def serve(self):
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
