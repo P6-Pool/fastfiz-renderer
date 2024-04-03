@@ -287,6 +287,7 @@ class GameTable:
 
             ts = int(scaling / 30)
             textSize(ts)
+            fill(*self.black_color)
             text(str(shot_tree.next.id), 0, ts * 0.8)
             pop()
 
