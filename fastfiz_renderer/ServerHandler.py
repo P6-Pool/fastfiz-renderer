@@ -69,10 +69,12 @@ class ServerHandler:
                 if self._shotTrees:
                     self.update_table_state(self._org_table_state)
                     self._active_shot_tree_idx = (self._active_shot_tree_idx + 1) % len(self._shotTrees)
+                    print(f"{self._active_shot_tree_idx + 1} / {len(self._shotTrees)}")
             elif event.key == "LEFT":
                 if self._shotTrees:
                     self.update_table_state(self._org_table_state)
                     self._active_shot_tree_idx = (self._active_shot_tree_idx - 1) % len(self._shotTrees)
+                    print(f"{self._active_shot_tree_idx + 1} / {len(self._shotTrees)}")
             elif event.key == "f" or event.key == "F":
                 self._stroke_mode = not self._stroke_mode
             elif event.key == "UP":
@@ -82,8 +84,6 @@ class ServerHandler:
             elif event.key in [str(val) for val in range(1, 10)]:
                 self._shot_vel = int(event.key.name)
                 self.update_table_state(self._org_table_state)
-
-            print(self._shotTrees[self._active_shot_tree_idx])
 
         run(renderer="skia", frame_rate=self._frames_per_second, sketch_draw=_draw, sketch_setup=_setup,
             sketch_key_released=_key_released, window_xpos=self._window_pos[0],
@@ -97,6 +97,9 @@ class ServerHandler:
 
     def update_table_state(self, table_state: api_pb2.TableState):
         new_table_state: ff.TableState = ff.TableState()
+
+
+
         for ball in table_state.balls:
             new_table_state.setBall(ball.number, ball.state, ball.pos.x, ball.pos.y)
         self._game_table = GameTable.from_table_state(new_table_state, 1)

@@ -9,9 +9,9 @@ from .compiled_protos import api_pb2, api_pb2_grpc
 class Server:
     def __init__(self, server_handler: ServerHandler):
         self.server_handler: ServerHandler = server_handler
-        self.JPoolService_instance = self.JPoolService(self)
+        self.CueCanvasService_instance = self.CueCanvasService(self)
 
-    class JPoolService(api_pb2_grpc.JPoolAPIServicer):
+    class CueCanvasService(api_pb2_grpc.CueCanvasAPIServicer):
         def __init__(self, outer_instance):
             self.outer_instance = outer_instance
 
@@ -22,7 +22,7 @@ class Server:
 
     def serve(self):
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-        api_pb2_grpc.add_JPoolAPIServicer_to_server(self.JPoolService_instance, server)
+        api_pb2_grpc.add_CueCanvasAPIServicer_to_server(self.CueCanvasService_instance, server)
         server.add_insecure_port('[::]:50051')
         server.start()
 

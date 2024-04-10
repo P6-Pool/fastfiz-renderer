@@ -6,7 +6,7 @@ import api_pb2 as api__pb2
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 
-class JPoolAPIStub(object):
+class CueCanvasAPIStub(object):
     """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
@@ -16,13 +16,13 @@ class JPoolAPIStub(object):
             channel: A grpc.Channel.
         """
         self.ShowShots = channel.unary_unary(
-                '/protobuf.JPoolAPI/ShowShots',
+                '/protobuf.CueCanvasAPI/ShowShots',
                 request_serializer=api__pb2.ShowShotsRequest.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 )
 
 
-class JPoolAPIServicer(object):
+class CueCanvasAPIServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def ShowShots(self, request, context):
@@ -32,7 +32,7 @@ class JPoolAPIServicer(object):
         raise NotImplementedError('Method not implemented!')
 
 
-def add_JPoolAPIServicer_to_server(servicer, server):
+def add_CueCanvasAPIServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'ShowShots': grpc.unary_unary_rpc_method_handler(
                     servicer.ShowShots,
@@ -41,12 +41,12 @@ def add_JPoolAPIServicer_to_server(servicer, server):
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'protobuf.JPoolAPI', rpc_method_handlers)
+            'protobuf.CueCanvasAPI', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
  # This class is part of an EXPERIMENTAL API.
-class JPoolAPI(object):
+class CueCanvasAPI(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
@@ -60,7 +60,7 @@ class JPoolAPI(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/protobuf.JPoolAPI/ShowShots',
+        return grpc.experimental.unary_unary(request, target, '/protobuf.CueCanvasAPI/ShowShots',
             api__pb2.ShowShotsRequest.SerializeToString,
             google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options, channel_credentials,
