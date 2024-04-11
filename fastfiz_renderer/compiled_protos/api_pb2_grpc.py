@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import api_pb2 as api__pb2
+from . import api_pb2 as api__pb2
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 
@@ -16,10 +16,10 @@ class CueCanvasAPIStub(object):
             channel: A grpc.Channel.
         """
         self.ShowShots = channel.unary_unary(
-                '/protobuf.CueCanvasAPI/ShowShots',
-                request_serializer=api__pb2.ShowShotsRequest.SerializeToString,
-                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-                )
+            "/protobuf.CueCanvasAPI/ShowShots",
+            request_serializer=api__pb2.ShowShotsRequest.SerializeToString,
+            response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+        )
 
 
 class CueCanvasAPIServicer(object):
@@ -28,40 +28,53 @@ class CueCanvasAPIServicer(object):
     def ShowShots(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
 
 def add_CueCanvasAPIServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'ShowShots': grpc.unary_unary_rpc_method_handler(
-                    servicer.ShowShots,
-                    request_deserializer=api__pb2.ShowShotsRequest.FromString,
-                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-            ),
+        "ShowShots": grpc.unary_unary_rpc_method_handler(
+            servicer.ShowShots,
+            request_deserializer=api__pb2.ShowShotsRequest.FromString,
+            response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+        ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'protobuf.CueCanvasAPI', rpc_method_handlers)
+        "protobuf.CueCanvasAPI", rpc_method_handlers
+    )
     server.add_generic_rpc_handlers((generic_handler,))
 
 
- # This class is part of an EXPERIMENTAL API.
+# This class is part of an EXPERIMENTAL API.
 class CueCanvasAPI(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def ShowShots(request,
+    def ShowShots(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/protobuf.CueCanvasAPI/ShowShots',
+            "/protobuf.CueCanvasAPI/ShowShots",
             api__pb2.ShowShotsRequest.SerializeToString,
             google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
