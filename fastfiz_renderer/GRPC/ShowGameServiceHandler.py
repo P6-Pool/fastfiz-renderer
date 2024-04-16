@@ -1,19 +1,18 @@
-from typing import Tuple
-
+from typing import Tuple, Optional
 from p5 import *
 import fastfiz as ff
-from .compiled_protos import api_pb2
+from ..compiled_protos import api_pb2
 from vectormath import Vector2
 
-from .GameTable import GameTable
+from fastfiz_renderer.GameTable import GameTable
 
-
-class ServerHandler:
+class ShowGameServiceHandler:
     _instance = None
 
     def __init__(self, mac_mode=False, window_pos: Tuple[int, int] = (100, 100), frames_per_second: int = 60,
                  scaling: int = 200, horizontal_mode: bool = False, flipped=False):
-        if ServerHandler._instance is None:
+
+        if ShowGameServiceHandler._instance is None:
             self._game_table: Optional[GameTable] = None
 
             self._mac_mode: bool = mac_mode
@@ -24,15 +23,15 @@ class ServerHandler:
             self._stroke_mode: bool = False
             self._flipped: bool = flipped
 
-            self._shotTrees: list[api_pb2.Shot] = []
-            self._active_shot_tree_idx: Optional[int] = None
+            self._turn_history: list[api_pb2.GameTurn] = []
+            self._active_turn_idx: Optional[int] = None
 
             self._table_state: Optional[ff.TableState] = None
             self._org_table_state: Optional[api_pb2.TableState] = None
-            self._start_ball_positions: dict[int, Tuple[float, float]] = dict()
-            self._shot_vel = 2
 
-            ServerHandler._instance = self
+            self._shot_available: bool = False
+
+            ShowGameServiceHandler._instance = self
         else:
             raise Exception("This class is a singleton!")
 
@@ -59,22 +58,11 @@ class ServerHandler:
                                   self._flipped,
                                   self._stroke_mode)
 
-            if self._shotTrees:
-                self._game_table.draw_shot_tree(self._shotTrees[self._active_shot_tree_idx],
-                                                self._scaling * 2 if self._mac_mode else self._scaling,
-                                                self._horizontal_mode, self._flipped, self._stroke_mode)
-
         def _key_released(event):
             if event.key == "RIGHT":
-                if self._shotTrees:
-                    self.update_table_state(self._org_table_state)
-                    self._active_shot_tree_idx = (self._active_shot_tree_idx + 1) % len(self._shotTrees)
-                    print(f"{self._active_shot_tree_idx + 1} / {len(self._shotTrees)}")
+                self._handle_shift_turn(True)
             elif event.key == "LEFT":
-                if self._shotTrees:
-                    self.update_table_state(self._org_table_state)
-                    self._active_shot_tree_idx = (self._active_shot_tree_idx - 1) % len(self._shotTrees)
-                    print(f"{self._active_shot_tree_idx + 1} / {len(self._shotTrees)}")
+                self._handle_shift_turn(False)
             elif event.key == "f" or event.key == "F":
                 self._stroke_mode = not self._stroke_mode
             elif event.key == "UP":
@@ -90,43 +78,43 @@ class ServerHandler:
             window_ypos=self._window_pos[1],
             window_title="Cue Canvas Server")
 
-    def update_shots_trees(self, shot_trees: list[api_pb2.Shot]):
-        self._shotTrees = shot_trees
-        if shot_trees:
-            self._active_shot_tree_idx = 0
+    def _handle_shift_turn(self, is_next):
+        if self._turn_history:
+            if is_next:
+                self._active_turn_idx += 1 if self._active_turn_idx < len(self._turn_history) - 1 else 0
+            else:
+                self._active_turn_idx -= 1 if self._active_turn_idx > 0 else 0
+
+            self.update_table_state(self._turn_history[self._active_turn_idx].tableState)
+            print(f"{self._active_turn_idx + 1} / {len(self._turn_history)}")
+
+    def update_turn_history(self, turn_history: list[api_pb2.GameTurn]):
+        self._turn_history = turn_history
+        if turn_history:
+            self._active_turn_idx = 0
+            self.update_table_state(self._turn_history[self._active_turn_idx].tableState)
 
     def update_table_state(self, table_state: api_pb2.TableState):
         new_table_state: ff.TableState = ff.TableState()
-
-
 
         for ball in table_state.balls:
             new_table_state.setBall(ball.number, ball.state, ball.pos.x, ball.pos.y)
         self._game_table = GameTable.from_table_state(new_table_state, 1)
         self._org_table_state = table_state
         self._table_state = new_table_state
+        self._shot_available = True
 
     def _handle_shoot(self):
-        target: Vector2 = Vector2(self._shotTrees[self._active_shot_tree_idx].ghostBall.x, self._shotTrees[self._active_shot_tree_idx].ghostBall.y)
-        source: Vector2 = Vector2(self._shotTrees[self._active_shot_tree_idx].posB1.x, self._shotTrees[self._active_shot_tree_idx].posB1.y)
+        if self._turn_history and self._shot_available:
+            gs = self._turn_history[self._active_turn_idx].gameShot
+            if gs.decision != "DEC_CONCEDE":
+                cue_pos = gs.cuePos
+                if cue_pos.x != 0 or cue_pos.y != 0:
+                    self._table_state.setBall(0, 1, cue_pos.x, cue_pos.y)
 
-        diff: Vector2 = target - source
-        x_axis: Vector2 = Vector2(1, 0)
+                params = gs.shotParams
+                params = ff.ShotParams(params.a, params.b, params.theta, params.phi, params.v)
 
-        angle = (math.acos(diff.dot(x_axis) / (diff.length * x_axis.length)) * 180 / math.pi) + 180 % 360
-
-        if diff.y < 0:
-            angle = 360 - angle
-
-        a = 0
-        b = 0
-        theta = 11
-        phi = angle
-        vel = self._shot_vel
-        params = ff.ShotParams(a, b, theta, phi, vel)
-
-        if self._table_state.isPhysicallyPossible(params) != ff.TableState.OK_PRECONDITION:
-            print("Shot not possible")
-        else:
-            shot = self._table_state.executeShot(params)
-            self._game_table.add_shot(params, shot)
+                shot = self._table_state.executeShot(params)
+                self._game_table.add_shot(params, shot)
+                self._shot_available = False

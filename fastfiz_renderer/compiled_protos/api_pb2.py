@@ -15,7 +15,7 @@ _sym_db = _symbol_database.Default()
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\tapi.proto\x12\x08protobuf\x1a\x1bgoogle/protobuf/empty.proto\"[\n\x10ShowShotsRequest\x12(\n\ntableState\x18\x01 \x02(\x0b\x32\x14.protobuf.TableState\x12\x1d\n\x05shots\x18\x02 \x03(\x0b\x32\x0e.protobuf.Shot\"+\n\nTableState\x12\x1d\n\x05\x62\x61lls\x18\x01 \x03(\x0b\x32\x0e.protobuf.Ball\"C\n\x04\x42\x61ll\x12\x1c\n\x03pos\x18\x01 \x02(\x0b\x32\x0f.protobuf.Point\x12\x0e\n\x06number\x18\x02 \x02(\x05\x12\r\n\x05state\x18\x03 \x02(\x05\"\x1d\n\x05Point\x12\t\n\x01x\x18\x01 \x02(\x01\x12\t\n\x01y\x18\x02 \x02(\x01\"\x95\x02\n\x04Shot\x12 \n\x04type\x18\x01 \x02(\x0e\x32\x12.protobuf.ShotType\x12\x1c\n\x04next\x18\x02 \x01(\x0b\x32\x0e.protobuf.Shot\x12\x1e\n\x06\x62ranch\x18\x03 \x01(\x0b\x32\x0e.protobuf.Shot\x12\x1e\n\x05posB1\x18\x04 \x01(\x0b\x32\x0f.protobuf.Point\x12\"\n\tghostBall\x18\x05 \x01(\x0b\x32\x0f.protobuf.Point\x12!\n\x08leftMost\x18\x06 \x01(\x0b\x32\x0f.protobuf.Point\x12\"\n\trightMost\x18\x07 \x01(\x0b\x32\x0f.protobuf.Point\x12\n\n\x02\x62\x31\x18\x08 \x01(\x05\x12\n\n\x02\x62\x32\x18\t \x01(\x05\x12\n\n\x02id\x18\n \x02(\x05*j\n\x08ShotType\x12\x0e\n\nCUE_STRIKE\x10\x00\x12\n\n\x06POCKET\x10\x01\x12\x08\n\x04RAIL\x10\x02\x12\n\n\x06STRIKE\x10\x03\x12\r\n\tKISS_LEFT\x10\x04\x12\x0e\n\nKISS_RIGHT\x10\x05\x12\r\n\tBALL_BOTH\x10\x06\x32Q\n\x0c\x43ueCanvasAPI\x12\x41\n\tShowShots\x12\x1a.protobuf.ShowShotsRequest\x1a\x16.google.protobuf.Empty\"\x00\x42$\n\x15org.CueCraft.protobufB\tApiProtosP\x01')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\tapi.proto\x12\x08protobuf\x1a\x1bgoogle/protobuf/empty.proto\"[\n\x10ShowShotsRequest\x12(\n\ntableState\x18\x01 \x02(\x0b\x32\x14.protobuf.TableState\x12\x1d\n\x05shots\x18\x02 \x03(\x0b\x32\x0e.protobuf.Shot\":\n\x0fShowGameRequest\x12\'\n\x0bturnHistory\x18\x01 \x03(\x0b\x32\x12.protobuf.GameTurn\"\x81\x01\n\x08GameTurn\x12\x11\n\tagentName\x18\x01 \x02(\t\x12(\n\ntableState\x18\x02 \x02(\x0b\x32\x14.protobuf.TableState\x12$\n\x08gameShot\x18\x03 \x02(\x0b\x32\x12.protobuf.GameShot\x12\x12\n\nshotResult\x18\x04 \x02(\t\"\x91\x01\n\x08GameShot\x12(\n\nshotParams\x18\x01 \x02(\x0b\x32\x14.protobuf.ShotParams\x12\x10\n\x08\x64\x65\x63ision\x18\x02 \x02(\t\x12\x12\n\nballTarget\x18\x03 \x02(\t\x12\x14\n\x0cpocketTarget\x18\x04 \x02(\t\x12\x1f\n\x06\x63uePos\x18\x05 \x02(\x0b\x32\x0f.protobuf.Point\"I\n\nShotParams\x12\t\n\x01\x61\x18\x01 \x02(\x01\x12\t\n\x01\x62\x18\x02 \x02(\x01\x12\x0b\n\x03phi\x18\x03 \x02(\x01\x12\r\n\x05theta\x18\x04 \x02(\x01\x12\t\n\x01v\x18\x05 \x02(\x01\"+\n\nTableState\x12\x1d\n\x05\x62\x61lls\x18\x01 \x03(\x0b\x32\x0e.protobuf.Ball\"C\n\x04\x42\x61ll\x12\x1c\n\x03pos\x18\x01 \x02(\x0b\x32\x0f.protobuf.Point\x12\x0e\n\x06number\x18\x02 \x02(\x05\x12\r\n\x05state\x18\x03 \x02(\x05\"\x1d\n\x05Point\x12\t\n\x01x\x18\x01 \x02(\x01\x12\t\n\x01y\x18\x02 \x02(\x01\"\x95\x02\n\x04Shot\x12 \n\x04type\x18\x01 \x02(\x0e\x32\x12.protobuf.ShotType\x12\x1c\n\x04next\x18\x02 \x01(\x0b\x32\x0e.protobuf.Shot\x12\x1e\n\x06\x62ranch\x18\x03 \x01(\x0b\x32\x0e.protobuf.Shot\x12\x1e\n\x05posB1\x18\x04 \x01(\x0b\x32\x0f.protobuf.Point\x12\"\n\tghostBall\x18\x05 \x01(\x0b\x32\x0f.protobuf.Point\x12!\n\x08leftMost\x18\x06 \x01(\x0b\x32\x0f.protobuf.Point\x12\"\n\trightMost\x18\x07 \x01(\x0b\x32\x0f.protobuf.Point\x12\n\n\x02\x62\x31\x18\x08 \x01(\x05\x12\n\n\x02\x62\x32\x18\t \x01(\x05\x12\n\n\x02id\x18\n \x02(\x05*j\n\x08ShotType\x12\x0e\n\nCUE_STRIKE\x10\x00\x12\n\n\x06POCKET\x10\x01\x12\x08\n\x04RAIL\x10\x02\x12\n\n\x06STRIKE\x10\x03\x12\r\n\tKISS_LEFT\x10\x04\x12\x0e\n\nKISS_RIGHT\x10\x05\x12\r\n\tBALL_BOTH\x10\x06\x32\x92\x01\n\x0c\x43ueCanvasAPI\x12\x41\n\tShowShots\x12\x1a.protobuf.ShowShotsRequest\x1a\x16.google.protobuf.Empty\"\x00\x12?\n\x08ShowGame\x12\x19.protobuf.ShowGameRequest\x1a\x16.google.protobuf.Empty\"\x00\x42$\n\x15org.CueCraft.protobufB\tApiProtosP\x01')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -23,18 +23,26 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'api_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['DESCRIPTOR']._options = None
   _globals['DESCRIPTOR']._serialized_options = b'\n\025org.CueCraft.protobufB\tApiProtosP\001'
-  _globals['_SHOTTYPE']._serialized_start=570
-  _globals['_SHOTTYPE']._serialized_end=676
+  _globals['_SHOTTYPE']._serialized_start=985
+  _globals['_SHOTTYPE']._serialized_end=1091
   _globals['_SHOWSHOTSREQUEST']._serialized_start=52
   _globals['_SHOWSHOTSREQUEST']._serialized_end=143
-  _globals['_TABLESTATE']._serialized_start=145
-  _globals['_TABLESTATE']._serialized_end=188
-  _globals['_BALL']._serialized_start=190
-  _globals['_BALL']._serialized_end=257
-  _globals['_POINT']._serialized_start=259
-  _globals['_POINT']._serialized_end=288
-  _globals['_SHOT']._serialized_start=291
-  _globals['_SHOT']._serialized_end=568
-  _globals['_CUECANVASAPI']._serialized_start=678
-  _globals['_CUECANVASAPI']._serialized_end=759
+  _globals['_SHOWGAMEREQUEST']._serialized_start=145
+  _globals['_SHOWGAMEREQUEST']._serialized_end=203
+  _globals['_GAMETURN']._serialized_start=206
+  _globals['_GAMETURN']._serialized_end=335
+  _globals['_GAMESHOT']._serialized_start=338
+  _globals['_GAMESHOT']._serialized_end=483
+  _globals['_SHOTPARAMS']._serialized_start=485
+  _globals['_SHOTPARAMS']._serialized_end=558
+  _globals['_TABLESTATE']._serialized_start=560
+  _globals['_TABLESTATE']._serialized_end=603
+  _globals['_BALL']._serialized_start=605
+  _globals['_BALL']._serialized_end=672
+  _globals['_POINT']._serialized_start=674
+  _globals['_POINT']._serialized_end=703
+  _globals['_SHOT']._serialized_start=706
+  _globals['_SHOT']._serialized_end=983
+  _globals['_CUECANVASAPI']._serialized_start=1094
+  _globals['_CUECANVASAPI']._serialized_end=1240
 # @@protoc_insertion_point(module_scope)

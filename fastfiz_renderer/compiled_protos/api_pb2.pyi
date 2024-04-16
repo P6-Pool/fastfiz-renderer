@@ -32,6 +32,52 @@ class ShowShotsRequest(_message.Message):
     shots: _containers.RepeatedCompositeFieldContainer[Shot]
     def __init__(self, tableState: _Optional[_Union[TableState, _Mapping]] = ..., shots: _Optional[_Iterable[_Union[Shot, _Mapping]]] = ...) -> None: ...
 
+class ShowGameRequest(_message.Message):
+    __slots__ = ("turnHistory",)
+    TURNHISTORY_FIELD_NUMBER: _ClassVar[int]
+    turnHistory: _containers.RepeatedCompositeFieldContainer[GameTurn]
+    def __init__(self, turnHistory: _Optional[_Iterable[_Union[GameTurn, _Mapping]]] = ...) -> None: ...
+
+class GameTurn(_message.Message):
+    __slots__ = ("agentName", "tableState", "gameShot", "shotResult")
+    AGENTNAME_FIELD_NUMBER: _ClassVar[int]
+    TABLESTATE_FIELD_NUMBER: _ClassVar[int]
+    GAMESHOT_FIELD_NUMBER: _ClassVar[int]
+    SHOTRESULT_FIELD_NUMBER: _ClassVar[int]
+    agentName: str
+    tableState: TableState
+    gameShot: GameShot
+    shotResult: str
+    def __init__(self, agentName: _Optional[str] = ..., tableState: _Optional[_Union[TableState, _Mapping]] = ..., gameShot: _Optional[_Union[GameShot, _Mapping]] = ..., shotResult: _Optional[str] = ...) -> None: ...
+
+class GameShot(_message.Message):
+    __slots__ = ("shotParams", "decision", "ballTarget", "pocketTarget", "cuePos")
+    SHOTPARAMS_FIELD_NUMBER: _ClassVar[int]
+    DECISION_FIELD_NUMBER: _ClassVar[int]
+    BALLTARGET_FIELD_NUMBER: _ClassVar[int]
+    POCKETTARGET_FIELD_NUMBER: _ClassVar[int]
+    CUEPOS_FIELD_NUMBER: _ClassVar[int]
+    shotParams: ShotParams
+    decision: str
+    ballTarget: str
+    pocketTarget: str
+    cuePos: Point
+    def __init__(self, shotParams: _Optional[_Union[ShotParams, _Mapping]] = ..., decision: _Optional[str] = ..., ballTarget: _Optional[str] = ..., pocketTarget: _Optional[str] = ..., cuePos: _Optional[_Union[Point, _Mapping]] = ...) -> None: ...
+
+class ShotParams(_message.Message):
+    __slots__ = ("a", "b", "phi", "theta", "v")
+    A_FIELD_NUMBER: _ClassVar[int]
+    B_FIELD_NUMBER: _ClassVar[int]
+    PHI_FIELD_NUMBER: _ClassVar[int]
+    THETA_FIELD_NUMBER: _ClassVar[int]
+    V_FIELD_NUMBER: _ClassVar[int]
+    a: float
+    b: float
+    phi: float
+    theta: float
+    v: float
+    def __init__(self, a: _Optional[float] = ..., b: _Optional[float] = ..., phi: _Optional[float] = ..., theta: _Optional[float] = ..., v: _Optional[float] = ...) -> None: ...
+
 class TableState(_message.Message):
     __slots__ = ("balls",)
     BALLS_FIELD_NUMBER: _ClassVar[int]
