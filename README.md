@@ -1,0 +1,1 @@
+python -m grpc_tools.protoc  --python_out=./fastfiz_renderer/compiled_protos --pyi_out=./fastfiz_renderer/compiled_protos  --grpc_python_out=./fastfiz_renderer/compiled_protos  --proto_path=./fastfiz-renderer-protobuffers ./fastfiz-renderer-protobuffers/api.proto

@@ -8,6 +8,8 @@ from .DevUtils import MathUtils as mu
 
 
 class GameBall:
+    RADIUS = 0.028575
+
     ball_colors = {
         0: (227, 228, 230),  # White
         1: (234, 220, 93),  # Yellow
@@ -34,7 +36,7 @@ class GameBall:
         self.white_color = (255, 255, 255)
         self.black_color = (0, 0, 0)
 
-    def draw(self, scaling=200, horizontal_mode=False, stroke_mode=False):
+    def draw(self, scaling=200, horizontal_mode=False, flipped=False, stroke_mode=False):
         dont_draw_states = [ff.Ball.NOTINPLAY, ff.Ball.POCKETED_NE, ff.Ball.POCKETED_E, ff.Ball.POCKETED_SE,
                             ff.Ball.POCKETED_SW, ff.Ball.POCKETED_W, ff.Ball.POCKETED_NW]
 
@@ -46,7 +48,7 @@ class GameBall:
             strokeWeight(4)
 
         fill(*self.color) if not stroke_mode else fill(*self.white_color)
-        circle(self.position.x * scaling, self.position.y * scaling, self.radius * scaling * 2)
+        circle(self.position.x * scaling, self.position.y * scaling, GameBall.RADIUS * scaling * 2)
 
         if self.is_being_dragged:
             noStroke() if not stroke_mode else strokeWeight(1)
@@ -61,6 +63,9 @@ class GameBall:
 
             if horizontal_mode:
                 rotate(-PI / 2)
+
+            if flipped:
+                scale(1, -1)
 
             ts = int(scaling / 30)
             textSize(ts)
@@ -87,12 +92,14 @@ class GameBall:
         time_since_event_start = time_since_shot_start - cur_state.e_time
 
         def calc_sliding_displacement(delta_time: float) -> vmath.Vector2:
-            rotational_velocity: vmath.Vector3 = self.radius * vmath.Vector3(0, 0, cur_state.ang_vel.z).cross(
+            rotational_velocity: vmath.Vector3 = GameBall.RADIUS * vmath.Vector3(0, 0, cur_state.ang_vel.z).cross(
                 cur_state.ang_vel)
             relative_velocity = cur_state.vel + vmath.Vector2(rotational_velocity.x, rotational_velocity.y)
+            self.velocity = cur_state.vel - delta_time * gravitational_const * sliding_friction_const * relative_velocity.normalize()
             return cur_state.vel * delta_time - 0.5 * sliding_friction_const * gravitational_const * delta_time ** 2 * relative_velocity.normalize()
 
         def calc_rolling_displacement(delta_time: float) -> vmath.Vector2:
+            self.velocity = cur_state.vel - gravitational_const * rolling_friction_const *  delta_time * cur_state.vel.copy().normalize()
             return cur_state.vel * delta_time - 0.5 * rolling_friction_const * gravitational_const * delta_time ** 2 * cur_state.vel.copy().normalize()
 
         displacement = vmath.Vector2(0, 0)
@@ -221,14 +228,14 @@ class GameBall:
     def force_to_end_of_shot_pos(self, shot: ff.Shot):
         relevant_states = self._get_relevant_ball_states_from_shot(shot)
         if relevant_states:
+            self.velocity = vmath.Vector2(0, 0)
             self.position = relevant_states[-1].pos
             self.state = relevant_states[-1].state
 
     def is_mouse_over(self, scaling: int, offset: vmath.Vector2):
         virtual_pos = vmath.Vector2(mouse_x, mouse_y) / scaling - offset
         d = dist((self.position.x, self.position.y, 0), (virtual_pos.x, virtual_pos.y, 0))
-        hovered = d < self.radius
-        self.is_being_hovered = hovered
+        hovered = d < GameBall.RADIUS
         return hovered
 
     def _get_relevant_ball_states_from_shot(self, shot: ff.Shot):
