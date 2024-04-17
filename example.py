@@ -2,7 +2,7 @@ from fastfiz_renderer import DevUtils, GameHandler
 
 
 def main():
-    game_handler = GameHandler(window_pos=(300, 200), frames_per_second=120, scaling=300, mac_mode=True,
+    game_handler = GameHandler(window_pos=(300, 200), frames_per_second=120, scaling=500, mac_mode=False,
                                horizontal_mode=False)
 
     # Play 8-ball games with each their shot decider

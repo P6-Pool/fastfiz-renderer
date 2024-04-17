@@ -1,6 +1,10 @@
+from math import fabs
+from cv2 import norm
 from p5 import *
 import fastfiz as ff
+from pygame import Vector2
 import vectormath as vmath
+from .DevUtils import MathUtils as mu
 
 
 class GameBall:
@@ -16,10 +20,12 @@ class GameBall:
         8: (32, 30, 31),  # Black
     }
 
-    def __init__(self, radius: float, number: int, position: vmath.Vector2, state: int):
+    def __init__(self, radius: float, number: int, position: vmath.Vector2, velocity: vmath.Vector3, spin: vmath.Vector3, state: int):
         self.radius = radius
         self.number = number
         self.position = position
+        self.velocity = velocity
+        self.spin = spin
         self.state = state
         self.color = GameBall.ball_colors[number if number <= 8 else number - 8]
         self.striped = number > 8
@@ -98,6 +104,119 @@ class GameBall:
 
         self.position = displacement + cur_state.pos
         self.state = cur_state.state
+
+    def fastfiz_update(self, shot: ff.Shot, old_time: float, new_time: float, sliding_friction_const: float, 
+                       rolling_friction_const: float, spinning_friction_const: float, gravitational_const: float):
+        if not (self.state == ff.Ball.SPINNING or self.state == ff.Ball.ROLLING or self.state == ff.Ball.SLIDING):
+            return
+        
+        r: vmath.Vector2 = self.position
+        v: vmath.Vector3 = self.velocity
+        w: vmath.Vector3 = self.spin
+        t: float = new_time - old_time
+        mu_sp: float = spinning_friction_const
+        mu_r: float = rolling_friction_const
+        mu_s: float = sliding_friction_const
+        u_o: vmath.Vector3
+        v_norm: vmath.Vector3
+        new_r: vmath.Vector2 = r
+        new_v: vmath.Vector3 = v
+        new_w: vmath.Vector3 = w
+
+        cos_phi: float = 1.0 
+        sin_phi: float = 0.0
+
+        if (mu.vec_mag(v) > 0):
+            v_norm = mu.vec_norm(v)
+            cos_phi = v_norm.x
+            sin_phi = v_norm.y
+
+            v = mu.vec_rotate(v, cos_phi, -sin_phi)
+            w = mu.vec_rotate(w, cos_phi, -sin_phi)
+        
+        if (self.state == ff.Ball.SPINNING):
+            new_w.x = 0
+            new_w.y = 0
+            new_w.z = self.update_spinning(w.z, t, mu_sp, gravitational_const, False)
+        elif (self.state == ff.Ball.SLIDING):
+            mu_s = sliding_friction_const
+            u_o = mu.vec_norm((v.sum(vmath.Vector3(0, 0, 1).cross(w) * self.radius)))
+            new_r.x = mu.vec_mag(v) * t - (0.5) * mu_s * gravitational_const * t * t * u_o.x
+            new_r.y = -(0.5) * mu_s * gravitational_const * t * t * u_o.y
+            new_v = v.sum(u_o * (-mu_s * gravitational_const * t))
+            new_w = w.sum(u_o.cross(vmath.Vector3(0, 0, 1)) * 
+                          (-(5.0 * mu_s * gravitational_const) / (2.0 * self.radius) * t))
+            new_r = mu.point_rotate(new_r, cos_phi, sin_phi)
+            new_r = new_r.sum(r)
+            new_v = mu.vec_rotate(new_v, cos_phi, sin_phi)
+            new_w = mu.vec_rotate(new_w, cos_phi, sin_phi)
+        elif (self.state == ff.Ball.ROLLING):
+            v_norm = mu.vec_norm(v)
+
+            mu_r = rolling_friction_const
+            new_r = (v * t).sum(v_norm * (-(0.5) * mu_r * gravitational_const * t * t))
+            new_v = v.sum(v_norm * (-mu_r * gravitational_const * t))
+            new_w = w * (mu.vec_mag(new_v) / mu.vec_mag(v))
+            new_w.z = self.update_spinning(w.z, t, mu_sp, gravitational_const, False)
+
+            new_r = mu.point_rotate(new_r, cos_phi, sin_phi)
+            new_r = new_r.sum(r)
+            new_v = mu.vec_rotate(new_v, cos_phi, sin_phi)
+            new_w = mu.vec_rotate(new_w, cos_phi, sin_phi)
+        else:
+            return
+        
+        if (mu.fequal(new_v.x, 0)):
+            new_v.x = 0
+        if (mu.fequal(new_v.y, 0)):
+            new_v.y = 0
+        if (mu.fequal(new_v.z, 0)):
+            new_v.z = 0
+        if (mu.fequal(new_w.x, 0)):
+            new_w.x = 0
+        if (mu.fequal(new_w.y, 0)):
+            new_w.y = 0
+        if (mu.fequal(new_w.z, 0)):
+            new_w.z = 0
+        
+        self.position = new_r
+        self.velocity = new_v
+        self.spin = new_w
+        self.state = self.update_state()
+
+    def update_state(self):
+        new_state: int
+        u: vmath.Vector3 = self.velocity.sum(((vmath.Vector3(0, 0, 1)).cross(self.spin)) * self.radius)
+        new_v: vmath.Vector3 = self.velocity
+        new_w: vmath.Vector3 = self.spin
+
+        if not mu.vzero(mu.vec_mag(self.velocity)):
+            if not mu.vzero(mu.vec_mag(u)):
+                new_state = ff.Ball.SLIDING
+            else:
+                new_state = ff.Ball.ROLLING
+        else:
+            if not mu.vzero(mu.vec_mag(self.spin.z)):
+                new_state = ff.Ball.SPINNING
+                new_w.x = 0
+                new_w.y = 0
+            else:
+                new_state = ff.Ball.STATIONARY
+                new_v = vmath.Vector3(0, 0, 0)
+                new_w = vmath.Vector3(0, 0, 0)    
+        
+        self.state = new_state
+        self.velocity = new_v
+        self.spin = new_w
+
+    def update_spinning(self, w_z: float, t: float, mu_sp: float, gravitional_const: float, isSliding: bool):
+        if mu.fequal(w_z, 0):
+            return 0
+        new_w_z: float = w_z - 5 * mu_sp * gravitional_const * t / (2 * self.radius) * (1 if w_z > 0 else -1) * (0.25 if isSliding else 1)
+        if (new_w_z * w_z) <= 0.0:
+            new_w_z = 0
+        return new_w_z
+        
 
     def force_to_end_of_shot_pos(self, shot: ff.Shot):
         relevant_states = self._get_relevant_ball_states_from_shot(shot)

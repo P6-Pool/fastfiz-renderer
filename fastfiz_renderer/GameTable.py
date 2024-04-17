@@ -48,7 +48,7 @@ class GameTable:
         for i in range(ff.Ball.CUE, ff.Ball.FIFTEEN + 1):
             ball: ff.Ball = table_state.getBall(i)
             pos = ball.getPos()
-            game_balls.append(GameBall(ball.getRadius(), ball.getID(), vmath.Vector2(pos.x, pos.y), ball.getState()))
+            game_balls.append(GameBall(ball.getRadius(), ball.getID(), vmath.Vector2(pos.x, pos.y), ball.getVelocity(), ball.getSpin(), ball.getState()))
 
         table: ff.Table = table_state.getTable()
 
