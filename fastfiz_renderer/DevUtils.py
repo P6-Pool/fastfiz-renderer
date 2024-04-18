@@ -78,11 +78,17 @@ class MathUtils:
     @staticmethod
     def vec_norm(vec: vmath.Vector3) -> vmath.Vector3:
         mag = MathUtils.vec_mag(vec)
-        return vmath.Vector3([vec.x / mag, vec.y / mag, vec.z / mag])
+        assert mag > 0
+        return vmath.Vector3([vec.x / mag, vec.y / mag, vec.z / mag]) 
+        
     
     @staticmethod
     def vec_rotate(vec: vmath.Vector3, cos_phi: float, sin_phi: float) -> vmath.Vector3:
         return vmath.Vector3([vec.x * cos_phi - vec.y * sin_phi, vec.x * sin_phi + vec.y * cos_phi, vec.z])
+    
+    @staticmethod
+    def vec_to_point(vec: vmath.Vector3) -> vmath.Vector2:
+        return vmath.Vector2([vec.x, vec.y])
     
     @staticmethod
     def point_rotate(point: vmath.Vector2, cos_phi: float, sin_phi: float) -> vmath.Vector2:

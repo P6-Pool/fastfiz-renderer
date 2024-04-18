@@ -6,12 +6,12 @@ import vectormath as vmath
 import fastfiz_renderer.compiled_protos.api_pb2 as api_pb2
 from vectormath import Vector2
 
-from .GameBall import GameBall
+from .GameBall import _BallState, GameBall
 
 
 class GameTable:
     def __init__(self, width: float, length: float, side_pocket_width: float, corner_pocket_width: float,
-                 rolling_friction_const: float, sliding_friction_const: float, gravitational_const: float,
+                 rolling_friction_const: float, sliding_friction_const: float, spinning_friction_const: float, gravitational_const: float,
                  game_balls: list[GameBall], shot_speed_factor: float):
         self.wood_width = width / 10
         self.rail_width = width / 30
@@ -36,6 +36,7 @@ class GameTable:
 
         self.rolling_friction_const = rolling_friction_const
         self.sliding_friction_const = sliding_friction_const
+        self.spinning_friction_const = spinning_friction_const
         self.gravitational_const = gravitational_const
         self.game_balls = game_balls
 
@@ -51,12 +52,14 @@ class GameTable:
         for i in range(ff.Ball.CUE, ff.Ball.FIFTEEN + 1):
             ball: ff.Ball = table_state.getBall(i)
             pos = ball.getPos()
-            game_balls.append(GameBall(ball.getRadius(), ball.getID(), vmath.Vector2(pos.x, pos.y), ball.getVelocity(), ball.getSpin(), ball.getState()))
+            vel = ball.getVelocity()
+            spin = ball.getSpin()
+            game_balls.append(GameBall(ball.getRadius(), ball.getID(), vmath.Vector2(pos.x, pos.y), vmath.Vector3(vel.x, vel.y, vel.z), vmath.Vector3(spin.x, spin.y, spin.z), ball.getState()))
 
         table: ff.Table = table_state.getTable()
 
         return cls(table.TABLE_WIDTH, table.TABLE_LENGTH, table.SIDE_POCKET_WIDTH, table.CORNER_POCKET_WIDTH,
-                   table.MU_ROLLING, table.MU_SLIDING, table.g, game_balls, shot_speed_factor)
+                   table.MU_ROLLING, table.MU_SLIDING, table.MU_SPINNING, table.g, game_balls, shot_speed_factor)
 
     def draw(self, scaling=200, horizontal_mode=False, flipped=False, stroke_mode=False):
         if horizontal_mode:
@@ -334,7 +337,6 @@ class GameTable:
                 return
 
         time_since_shot_start = (time.time() - self._active_shot_start_time) * self._shot_speed_factor
-
         if time_since_shot_start > self._active_shot.getDuration():
             for ball in self.game_balls:
                 ball.force_to_end_of_shot_pos(self._active_shot)
@@ -342,10 +344,23 @@ class GameTable:
             return
 
         else:
+            
+            events = self._active_shot.getEventList()
+            cur_event: ff.Event = events[0]
+
+            assert cur_event.getTime() < time_since_shot_start
+
+            for event in events:
+                if cur_event.getTime() < event.getTime() <= time_since_shot_start:
+                    cur_event = event
+
             for ball in self.game_balls:
-                ball.update(time_since_shot_start, self._active_shot, self.sliding_friction_const,
-                            self.rolling_friction_const,
-                            self.gravitational_const)
+                ball.fastfiz_update(cur_event, time_since_shot_start, self.sliding_friction_const, self.rolling_friction_const, self.spinning_friction_const, VERBOSE=True)
+                #ball.update(time_since_shot_start, self._active_shot, self.sliding_friction_const,
+                #            self.rolling_friction_const,
+                #            self.gravitational_const)
+
+                
 
     def add_shot(self, params: ff.ShotParams, shot: ff.Shot):
         self._shot_queue.append((params, shot))

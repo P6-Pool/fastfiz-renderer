@@ -1,3 +1,4 @@
+import copy
 from math import fabs
 from cv2 import norm
 from p5 import *
@@ -112,29 +113,50 @@ class GameBall:
         self.position = displacement + cur_state.pos
         self.state = cur_state.state
 
-    def fastfiz_update(self, shot: ff.Shot, old_time: float, new_time: float, sliding_friction_const: float, 
-                       rolling_friction_const: float, spinning_friction_const: float, gravitational_const: float):
-        if not (self.state == ff.Ball.SPINNING or self.state == ff.Ball.ROLLING or self.state == ff.Ball.SLIDING):
-            return
+    def fastfiz_update(self, cur_event: ff.Event, new_time: float, sliding_friction_const: float, 
+                       rolling_friction_const: float, spinning_friction_const: float, VERBOSE = False):
         
+        ball1: ff.Ball = cur_event.getBall1Data()
+        ball2: ff.Ball = cur_event.getBall2Data()
+
+        if self.number == ball1.getID():
+            self.position = vmath.Vector2([ball1.getPos().x, ball1.getPos().y])
+            self.velocity = vmath.Vector3([ball1.getVelocity().x, ball1.getVelocity().y, ball1.getVelocity().z])
+            self.spin = vmath.Vector3([ball1.getSpin().x, ball1.getSpin().y, ball1.getSpin().z])
+            self.state = ball1.getState()
+        if self.number == ball2.getID():
+            self.position = vmath.Vector2([ball2.getPos().x, ball2.getPos().y])
+            self.velocity = vmath.Vector3([ball2.getVelocity().x, ball2.getVelocity().y, ball2.getVelocity().z])
+            self.spin = vmath.Vector3([ball2.getSpin().x, ball2.getSpin().y, ball2.getSpin().z])
+            self.state = ball2.getState()
+
+        if not (self.state == ff.Ball.SPINNING or self.state == ff.Ball.ROLLING or self.state == ff.Ball.SLIDING):
+             return
+        
+        assert cur_event.getTime() < new_time
+
         r: vmath.Vector2 = self.position
         v: vmath.Vector3 = self.velocity
         w: vmath.Vector3 = self.spin
-        t: float = new_time - old_time
+        t: float = new_time - cur_event.getTime()
         mu_sp: float = spinning_friction_const
         mu_r: float = rolling_friction_const
         mu_s: float = sliding_friction_const
         u_o: vmath.Vector3
         v_norm: vmath.Vector3
-        new_r: vmath.Vector2 = r
-        new_v: vmath.Vector3 = v
-        new_w: vmath.Vector3 = w
+        new_r: vmath.Vector2 = r.copy()
+        new_v: vmath.Vector3 = v.copy()
+        new_w: vmath.Vector3 = w.copy()
 
         cos_phi: float = 1.0 
         sin_phi: float = 0.0
 
+        if VERBOSE:
+            print(f"Ball {self.number} is stepping forward from time {cur_event.getTime()} to time {new_time}.")
+
         if (mu.vec_mag(v) > 0):
             v_norm = mu.vec_norm(v)
+            
             cos_phi = v_norm.x
             sin_phi = v_norm.y
 
@@ -144,30 +166,30 @@ class GameBall:
         if (self.state == ff.Ball.SPINNING):
             new_w.x = 0
             new_w.y = 0
-            new_w.z = self.update_spinning(w.z, t, mu_sp, gravitational_const, False)
+            new_w.z = self.update_spinning(w.z, t, mu_sp, ff.Table.g, False)
         elif (self.state == ff.Ball.SLIDING):
             mu_s = sliding_friction_const
-            u_o = mu.vec_norm((v.sum(vmath.Vector3(0, 0, 1).cross(w) * self.radius)))
-            new_r.x = mu.vec_mag(v) * t - (0.5) * mu_s * gravitational_const * t * t * u_o.x
-            new_r.y = -(0.5) * mu_s * gravitational_const * t * t * u_o.y
-            new_v = v.sum(u_o * (-mu_s * gravitational_const * t))
-            new_w = w.sum(u_o.cross(vmath.Vector3(0, 0, 1)) * 
-                          (-(5.0 * mu_s * gravitational_const) / (2.0 * self.radius) * t))
+            u_o = mu.vec_norm(v + (vmath.Vector3(0, 0, 1).cross(w) * self.radius))
+            new_r.x = mu.vec_mag(v) * t - (0.5) * mu_s * ff.Table.g * t * t * u_o.x
+            new_r.y = -(0.5) * mu_s * ff.Table.g * t * t * u_o.y
+            new_v = v + (u_o * (-mu_s * ff.Table.g * t))
+            new_w = w + (u_o.cross(vmath.Vector3(0, 0, 1)) * 
+                          (-(5.0 * mu_s * ff.Table.g) / (2.0 * self.radius) * t))
             new_r = mu.point_rotate(new_r, cos_phi, sin_phi)
-            new_r = new_r.sum(r)
+            new_r = r + new_r
             new_v = mu.vec_rotate(new_v, cos_phi, sin_phi)
             new_w = mu.vec_rotate(new_w, cos_phi, sin_phi)
         elif (self.state == ff.Ball.ROLLING):
             v_norm = mu.vec_norm(v)
 
             mu_r = rolling_friction_const
-            new_r = (v * t).sum(v_norm * (-(0.5) * mu_r * gravitational_const * t * t))
-            new_v = v.sum(v_norm * (-mu_r * gravitational_const * t))
+            new_r = mu.vec_to_point((v * t) + (v_norm * (-(0.5) * mu_r * ff.Table.g * t * t)))
+            new_v = v + (v_norm * (-mu_r * ff.Table.g * t))
             new_w = w * (mu.vec_mag(new_v) / mu.vec_mag(v))
-            new_w.z = self.update_spinning(w.z, t, mu_sp, gravitational_const, False)
+            new_w.z = self.update_spinning(w.z, t, mu_sp, ff.Table.g, False)
 
             new_r = mu.point_rotate(new_r, cos_phi, sin_phi)
-            new_r = new_r.sum(r)
+            new_r = r + new_r
             new_v = mu.vec_rotate(new_v, cos_phi, sin_phi)
             new_w = mu.vec_rotate(new_w, cos_phi, sin_phi)
         else:
@@ -186,14 +208,14 @@ class GameBall:
         if (mu.fequal(new_w.z, 0)):
             new_w.z = 0
         
-        self.position = new_r
-        self.velocity = new_v
-        self.spin = new_w
+        self.position = new_r.copy()
+        self.velocity = new_v.copy()
+        self.spin = new_w.copy()
         self.state = self.update_state()
 
     def update_state(self):
         new_state: int
-        u: vmath.Vector3 = self.velocity.sum(((vmath.Vector3(0, 0, 1)).cross(self.spin)) * self.radius)
+        u: vmath.Vector3 = self.velocity + (((vmath.Vector3(0, 0, 1)).cross(self.spin)) * self.radius)
         new_v: vmath.Vector3 = self.velocity
         new_w: vmath.Vector3 = self.spin
 
@@ -226,11 +248,30 @@ class GameBall:
         
 
     def force_to_end_of_shot_pos(self, shot: ff.Shot):
-        relevant_states = self._get_relevant_ball_states_from_shot(shot)
-        if relevant_states:
-            self.velocity = vmath.Vector2(0, 0)
-            self.position = relevant_states[-1].pos
-            self.state = relevant_states[-1].state
+        #relevant_states = self._get_relevant_ball_states_from_shot(shot)
+        events = shot.getEventList()
+        last_event: ff.Event = events[-1]
+        ball1: ff.Ball = last_event.getBall1Data()
+        ball2: ff.Ball = last_event.getBall2Data()
+        ball1_pos = vmath.Vector2([ball1.getPos().x, ball1.getPos().y])
+        ball2_pos = vmath.Vector2([ball2.getPos().x, ball2.getPos().y])
+        ball1_spin = vmath.Vector3([ball1.getSpin().x, ball1.getSpin().y, ball1.getSpin().z])
+        ball2_spin = vmath.Vector3([ball2.getSpin().x, ball2.getSpin().y, ball2.getSpin().z])
+        ball1_state = ball1.getState()
+        ball2_state = ball2.getState()
+
+        if self.number == last_event.getBall1Data().getID():
+            self.position = ball1_pos
+            self.velocity = vmath.Vector3(0, 0, 0)
+            self.spin = ball1_spin
+            self.state = ball1_state
+
+        elif self.number == last_event.getBall2Data().getID():
+            self.position = ball2_pos
+            self.velocity = vmath.Vector3(0, 0, 0)
+            self.spin = ball2_spin
+            self.state = ball2_state
+
 
     def is_mouse_over(self, scaling: int, offset: vmath.Vector2):
         virtual_pos = vmath.Vector2(mouse_x, mouse_y) / scaling - offset
