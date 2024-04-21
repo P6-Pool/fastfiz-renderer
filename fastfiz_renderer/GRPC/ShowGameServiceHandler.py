@@ -25,6 +25,8 @@ class ShowGameServiceHandler:
             self._flipped: bool = flipped
             self._auto_play: bool = auto_play
 
+            self._games: list[api_pb2.Game] = []
+            self._active_game_idx: Optional[int] = None
             self._turn_history: list[api_pb2.GameTurn] = []
             self._active_turn_idx: Optional[int] = None
 
@@ -92,9 +94,15 @@ class ShowGameServiceHandler:
     def _handle_shift_turn(self, is_next):
         if self._turn_history:
             if is_next:
-                self._active_turn_idx += 1 if self._active_turn_idx < len(self._turn_history) - 1 else 0
+                if self._active_turn_idx < len(self._turn_history) - 1:
+                    self._active_turn_idx += 1
+                else:
+                    self._handle_shift_game(True)
             else:
-                self._active_turn_idx -= 1 if self._active_turn_idx > 0 else 0
+                if self._active_turn_idx > 0:
+                    self._active_turn_idx -= 1
+                else:
+                    self._handle_shift_game(False)
 
             turn = self._turn_history[self._active_turn_idx]
 
@@ -105,19 +113,51 @@ class ShowGameServiceHandler:
                 self._highlighted_ball = None
                 self._highlighted_pocket = None
             self._shot_params = turn.gameShot.shotParams
-            self.update_table_state(turn.tableStateBefore)
             print(f"{self._active_turn_idx + 1} / {len(self._turn_history)} - {turn.agentName} - {turn.gameShot.decision} - {turn.turnType} - {turn.shotResult}")
+            self.update_table_state(turn.tableStateBefore)
+
+    def _handle_shift_game(self, is_next):
+        if self._games:
+            if is_next:
+                if self._active_game_idx < len(self._games) - 1:
+                    self._active_game_idx += 1
+                else:
+                    self._active_game_idx = 0
+                self._active_turn_idx = 0
+            else:
+                if self._active_game_idx > 0:
+                    self._active_game_idx -= 1
+                else:
+                    self._active_game_idx = len(self._games) - 1
+                self._active_turn_idx = len(self._games[self._active_game_idx].turnHistory) - 1
+
+            game = self._games[self._active_game_idx]
+            print(f"Game {self._active_game_idx + 1} / {len(self._games)}")
+            self.update_turn_history(game.turnHistory)
+
+    def update_games(self, games: list[api_pb2.Game]):
+        self._games = games
+        if self._games:
+            self._active_game_idx = 0
+            self._active_turn_idx = 0
+            self._highlighted_ball = None
+            self._highlighted_pocket = None
+            self._shot_params = None
+
+            game = self._games[self._active_game_idx]
+            print(f"Game {self._active_game_idx + 1} / {len(self._games)}")
+            self.update_turn_history(game.turnHistory)
 
     def update_turn_history(self, turn_history: list[api_pb2.GameTurn]):
         self._turn_history = turn_history
         if turn_history:
-            self._active_turn_idx = 0
-
             turn = self._turn_history[self._active_turn_idx]
             self._shot_params = turn.gameShot.shotParams
             self.update_table_state(turn.tableStateBefore)
-            self._handle_shoot()
-            print(f"{self._active_turn_idx + 1} / {len(self._turn_history)} - {turn.agentName} - {turn.gameShot.decision} - {turn.turnType} - {turn.shotResult}")
+
+            if self._auto_play:
+                self._handle_shoot()
+            # print(f"{self._active_turn_idx + 1} / {len(self._turn_history)} - {turn.agentName} - {turn.gameShot.decision} - {turn.turnType} - {turn.shotResult}")
 
     def update_table_state(self, table_state: api_pb2.TableState):
         new_table_state: ff.TableState = ff.TableState()
@@ -143,9 +183,10 @@ class ShowGameServiceHandler:
                 self._game_table.add_shot(params, shot, lambda: self._handle_shot_finished())
                 self._shot_available = False
                 self._shot_params = None
+            else:
+                self._handle_shot_finished()
 
     def _handle_shot_finished(self):
-        if self._active_turn_idx < len(self._turn_history) - 1:
-            self._handle_shift_turn(True)
-            if self._auto_play:
-                self._handle_shoot()
+        self._handle_shift_turn(True)
+        if self._auto_play:
+            self._handle_shoot()

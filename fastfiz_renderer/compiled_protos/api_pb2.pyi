@@ -32,7 +32,13 @@ class ShowShotsRequest(_message.Message):
     shots: _containers.RepeatedCompositeFieldContainer[Shot]
     def __init__(self, tableState: _Optional[_Union[TableState, _Mapping]] = ..., shots: _Optional[_Iterable[_Union[Shot, _Mapping]]] = ...) -> None: ...
 
-class ShowGameRequest(_message.Message):
+class ShowGamesRequest(_message.Message):
+    __slots__ = ("games",)
+    GAMES_FIELD_NUMBER: _ClassVar[int]
+    games: _containers.RepeatedCompositeFieldContainer[Game]
+    def __init__(self, games: _Optional[_Iterable[_Union[Game, _Mapping]]] = ...) -> None: ...
+
+class Game(_message.Message):
     __slots__ = ("turnHistory",)
     TURNHISTORY_FIELD_NUMBER: _ClassVar[int]
     turnHistory: _containers.RepeatedCompositeFieldContainer[GameTurn]

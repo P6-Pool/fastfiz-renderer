@@ -22,8 +22,8 @@ class Server:
             self.outer_instance.show_shots_handler.update_shots_trees(request.shots)
             return empty_pb2.Empty()
 
-        def ShowGame(self, request: api_pb2.ShowGameRequest, context):
-            self.outer_instance.show_game_handler.update_turn_history(request.turnHistory)
+        def ShowGames(self, request: api_pb2.ShowGamesRequest, context):
+            self.outer_instance.show_game_handler.update_games(request.games)
             return empty_pb2.Empty()
 
     def serve_shots_display(self):

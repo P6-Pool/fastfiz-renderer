@@ -20,9 +20,9 @@ class CueCanvasAPIStub(object):
                 request_serializer=api__pb2.ShowShotsRequest.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 )
-        self.ShowGame = channel.unary_unary(
-                '/protobuf.CueCanvasAPI/ShowGame',
-                request_serializer=api__pb2.ShowGameRequest.SerializeToString,
+        self.ShowGames = channel.unary_unary(
+                '/protobuf.CueCanvasAPI/ShowGames',
+                request_serializer=api__pb2.ShowGamesRequest.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 )
 
@@ -36,7 +36,7 @@ class CueCanvasAPIServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def ShowGame(self, request, context):
+    def ShowGames(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -50,9 +50,9 @@ def add_CueCanvasAPIServicer_to_server(servicer, server):
                     request_deserializer=api__pb2.ShowShotsRequest.FromString,
                     response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
-            'ShowGame': grpc.unary_unary_rpc_method_handler(
-                    servicer.ShowGame,
-                    request_deserializer=api__pb2.ShowGameRequest.FromString,
+            'ShowGames': grpc.unary_unary_rpc_method_handler(
+                    servicer.ShowGames,
+                    request_deserializer=api__pb2.ShowGamesRequest.FromString,
                     response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
     }
@@ -83,7 +83,7 @@ class CueCanvasAPI(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def ShowGame(request,
+    def ShowGames(request,
             target,
             options=(),
             channel_credentials=None,
@@ -93,8 +93,8 @@ class CueCanvasAPI(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/protobuf.CueCanvasAPI/ShowGame',
-            api__pb2.ShowGameRequest.SerializeToString,
+        return grpc.experimental.unary_unary(request, target, '/protobuf.CueCanvasAPI/ShowGames',
+            api__pb2.ShowGamesRequest.SerializeToString,
             google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
