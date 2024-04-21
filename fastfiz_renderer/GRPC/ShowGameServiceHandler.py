@@ -6,11 +6,12 @@ from vectormath import Vector2
 
 from fastfiz_renderer.GameTable import GameTable
 
+
 class ShowGameServiceHandler:
     _instance = None
 
     def __init__(self, mac_mode=False, window_pos: Tuple[int, int] = (100, 100), frames_per_second: int = 60,
-                 scaling: int = 200, horizontal_mode: bool = False, flipped=False):
+                 scaling: int = 200, horizontal_mode: bool = False, flipped: bool = False, auto_play: bool = False):
 
         if ShowGameServiceHandler._instance is None:
             self._game_table: Optional[GameTable] = None
@@ -22,12 +23,16 @@ class ShowGameServiceHandler:
             self._horizontal_mode: bool = horizontal_mode
             self._stroke_mode: bool = False
             self._flipped: bool = flipped
+            self._auto_play: bool = auto_play
 
             self._turn_history: list[api_pb2.GameTurn] = []
             self._active_turn_idx: Optional[int] = None
 
             self._table_state: Optional[ff.TableState] = None
             self._org_table_state: Optional[api_pb2.TableState] = None
+            self._highlighted_ball: Optional[str] = None
+            self._highlighted_pocket: Optional[str] = None
+            self._shot_params: Optional[api_pb2.ShotParams] = None
 
             self._shot_available: bool = False
 
@@ -56,7 +61,11 @@ class ShowGameServiceHandler:
             self._game_table.update(None)
             self._game_table.draw(self._scaling * 2 if self._mac_mode else self._scaling, self._horizontal_mode,
                                   self._flipped,
-                                  self._stroke_mode)
+                                  self._stroke_mode,
+                                  [self._highlighted_ball],
+                                  [self._highlighted_pocket],
+                                  self._shot_params
+                                  )
 
         def _key_released(event):
             if event.key == "RIGHT":
@@ -65,6 +74,8 @@ class ShowGameServiceHandler:
                 self._handle_shift_turn(False)
             elif event.key == "f" or event.key == "F":
                 self._stroke_mode = not self._stroke_mode
+            elif event.key == "a" or event.key == "A":
+                self._auto_play = not self._auto_play
             elif event.key == "UP":
                 self._handle_shoot()
             elif event.key == "r" or event.key == "R":
@@ -85,14 +96,28 @@ class ShowGameServiceHandler:
             else:
                 self._active_turn_idx -= 1 if self._active_turn_idx > 0 else 0
 
-            self.update_table_state(self._turn_history[self._active_turn_idx].tableState)
-            print(f"{self._active_turn_idx + 1} / {len(self._turn_history)}")
+            turn = self._turn_history[self._active_turn_idx]
+
+            if turn.turnType != "TT_BREAK":
+                self._highlighted_ball = turn.gameShot.ballTarget
+                self._highlighted_pocket = self._turn_history[self._active_turn_idx].gameShot.pocketTarget
+            else:
+                self._highlighted_ball = None
+                self._highlighted_pocket = None
+            self._shot_params = turn.gameShot.shotParams
+            self.update_table_state(turn.tableStateBefore)
+            print(f"{self._active_turn_idx + 1} / {len(self._turn_history)} - {turn.agentName} - {turn.gameShot.decision} - {turn.turnType} - {turn.shotResult}")
 
     def update_turn_history(self, turn_history: list[api_pb2.GameTurn]):
         self._turn_history = turn_history
         if turn_history:
             self._active_turn_idx = 0
-            self.update_table_state(self._turn_history[self._active_turn_idx].tableState)
+
+            turn = self._turn_history[self._active_turn_idx]
+            self._shot_params = turn.gameShot.shotParams
+            self.update_table_state(turn.tableStateBefore)
+            self._handle_shoot()
+            print(f"{self._active_turn_idx + 1} / {len(self._turn_history)} - {turn.agentName} - {turn.gameShot.decision} - {turn.turnType} - {turn.shotResult}")
 
     def update_table_state(self, table_state: api_pb2.TableState):
         new_table_state: ff.TableState = ff.TableState()
@@ -106,15 +131,21 @@ class ShowGameServiceHandler:
 
     def _handle_shoot(self):
         if self._turn_history and self._shot_available:
-            gs = self._turn_history[self._active_turn_idx].gameShot
-            if gs.decision != "DEC_CONCEDE":
-                cue_pos = gs.cuePos
-                if cue_pos.x != 0 or cue_pos.y != 0:
-                    self._table_state.setBall(0, 1, cue_pos.x, cue_pos.y)
+            gt = self._turn_history[self._active_turn_idx]
+            gs = gt.gameShot
 
+            if gs.decision != "DEC_CONCEDE":
                 params = gs.shotParams
                 params = ff.ShotParams(params.a, params.b, params.theta, params.phi, params.v)
 
                 shot = self._table_state.executeShot(params)
-                self._game_table.add_shot(params, shot)
+
+                self._game_table.add_shot(params, shot, lambda: self._handle_shot_finished())
                 self._shot_available = False
+                self._shot_params = None
+
+    def _handle_shot_finished(self):
+        if self._active_turn_idx < len(self._turn_history) - 1:
+            self._handle_shift_turn(True)
+            if self._auto_play:
+                self._handle_shoot()

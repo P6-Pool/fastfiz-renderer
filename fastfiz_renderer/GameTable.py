@@ -39,8 +39,8 @@ class GameTable:
         self.gravitational_const = gravitational_const
         self.game_balls = game_balls
 
-        self._shot_queue: list[Tuple[ff.ShotParams, ff.Shot]] = []
-        self._active_shot: Optional[ff.Shot] = None
+        self._shot_queue: list[Tuple[ff.ShotParams, ff.Shot, Callable[None, None]]] = []
+        self._active_shot: Optional[Tuple[ff.ShotParams, ff.Shot, Callable[None, None]]] = None
         self._active_shot_start_time: float = 0
         self._shot_speed_factor = shot_speed_factor
 
@@ -58,7 +58,7 @@ class GameTable:
         return cls(table.TABLE_WIDTH, table.TABLE_LENGTH, table.SIDE_POCKET_WIDTH, table.CORNER_POCKET_WIDTH,
                    table.MU_ROLLING, table.MU_SLIDING, table.g, game_balls, shot_speed_factor)
 
-    def draw(self, scaling=200, horizontal_mode=False, flipped=False, stroke_mode=False):
+    def draw(self, scaling=200, horizontal_mode=False, flipped=False, stroke_mode=False, highlighted_balls:Optional[list[str]] = None, highlighted_pockets: Optional[list[str]] = None, shot_params: Optional[api_pb2.ShotParams] = None):
         if horizontal_mode:
             rotate(PI / 2)
             translate(0, -int(self.length * scaling))
@@ -148,7 +148,7 @@ class GameTable:
                    self.wood_width / 10 * scaling)
         pop()
 
-        def draw_side_pocket(rotation_angle, rotation_point):
+        def draw_side_pocket(rotation_angle, rotation_point, highlighted):
             push()
             translate(*rotation_point)
             rotate(rotation_angle)
@@ -163,6 +163,11 @@ class GameTable:
             fill(*self.pocket_color) if not stroke_mode else fill(*self.black_color)
             circle((self.side_pocket_width / 2) * scaling, -self.corner_pocket_width / 2 * scaling,
                    self.corner_pocket_width * scaling)
+
+            if highlighted:
+                fill(*GameBall.ball_colors[0]) if not stroke_mode else fill(*self.white_color)
+                circle((self.side_pocket_width / 2) * scaling, -self.corner_pocket_width / 2 * scaling,
+                       self.corner_pocket_width / 4 * scaling)
 
             a = self.wood_width - (self.board_pos - self.corner_pocket_width / 2)
             c = self.corner_pocket_width / 2
@@ -193,7 +198,7 @@ class GameTable:
             endShape()
             pop()
 
-        def draw_corner_pocket(rotation_angle, rotation_point):
+        def draw_corner_pocket(rotation_angle, rotation_point, highlighted):
             push()
             translate(*rotation_point)
             rotate(rotation_angle)
@@ -207,6 +212,10 @@ class GameTable:
             fill(*self.pocket_color) if not stroke_mode else fill(*self.black_color)
             circle(self.corner_pocket_width * scaling / 2, 0, self.corner_pocket_width * scaling)
 
+            if highlighted:
+                fill(*GameBall.ball_colors[0]) if not stroke_mode else fill(*self.white_color)
+                circle(self.corner_pocket_width * scaling / 2, 0, self.corner_pocket_width / 4 * scaling)
+
             line(0, 0, 0, self.corner_pocket_width * scaling / 2)
             line(self.corner_pocket_width * scaling, 0, self.corner_pocket_width * scaling, self.corner_pocket_width * scaling / 2)
 
@@ -214,18 +223,41 @@ class GameTable:
 
         offset = math.sqrt(self.corner_pocket_width ** 2 / 2)
 
+        SE_highlighted = "SE" in highlighted_pockets
+        E_highlighted = "E" in highlighted_pockets
+        NE_highlighted = "NE" in highlighted_pockets
+        NW_highlighted = "NW" in highlighted_pockets
+        W_highlighted = "W" in highlighted_pockets
+        SW_highlighted = "SW" in highlighted_pockets
+
         draw_corner_pocket(PI / 4 * 1, (
             (self.wood_width + 2 * self.rail_width + self.board_width - offset) * scaling,
-            self.wood_width * scaling))  # NE
+            self.wood_width * scaling), SE_highlighted)  # SE
         draw_side_pocket(PI / 4 * 2, ((self.width - self.wood_width - self.rail_width) * scaling, (
-                self.board_pos + self.board_length / 2 - self.side_pocket_width / 2) * scaling))  # E
+                self.board_pos + self.board_length / 2 - self.side_pocket_width / 2) * scaling), E_highlighted)  # E
         draw_corner_pocket(PI / 4 * 3, (
-            (self.width - self.wood_width) * scaling, (self.length - self.wood_width - offset) * scaling))  # SE
+            (self.width - self.wood_width) * scaling, (self.length - self.wood_width - offset) * scaling), NE_highlighted)  # NE
         draw_side_pocket(PI / 4 * 6, (self.board_pos * scaling, (
-                self.board_pos + self.board_length / 2 + self.side_pocket_width / 2) * scaling))  # W
+                self.board_pos + self.board_length / 2 + self.side_pocket_width / 2) * scaling), W_highlighted)  # W
         draw_corner_pocket(PI / 4 * 5,
-                           ((self.wood_width + offset) * scaling, (self.length - self.wood_width) * scaling))  # SW
-        draw_corner_pocket(PI / 4 * 7, (self.wood_width * scaling, (self.wood_width + offset) * scaling))  # NW
+                           ((self.wood_width + offset) * scaling, (self.length - self.wood_width) * scaling), NW_highlighted)  # NW
+        draw_corner_pocket(PI / 4 * 7, (self.wood_width * scaling, (self.wood_width + offset) * scaling), SW_highlighted)  # SW
+
+        if shot_params:
+            stroke(*self.board_marking_color) if not stroke_mode else stroke(*self.black_color)
+            strokeWeight(8)
+            for ball in self.game_balls:
+                if ball.number == 0 and ball.state == 1:
+                    push()
+                    translate((ball.position.x + self.rail_width + self.wood_width) * scaling, (ball.position.y + self.rail_width + self.wood_width) * scaling)
+                    push()
+                    rotate(shot_params.phi * PI / 180)
+                    length = GameBall.RADIUS * scaling + shot_params.v * 20
+                    line(0, 0, length, 0)
+                    pop()
+                    pop()
+                    break
+            strokeWeight(1)
 
         noStroke() if not stroke_mode else stroke(*self.black_color)
 
@@ -234,7 +266,7 @@ class GameTable:
         translate(int(self.board_pos * scaling),
                   int(self.board_pos * scaling))
         for ball in self.game_balls:
-            ball.draw(scaling, horizontal_mode, flipped, stroke_mode)
+            ball.draw(scaling, horizontal_mode, flipped, stroke_mode, highlighted_balls)
         pop()
 
     def draw_shot_tree(self, shot_tree: api_pb2.Shot, scaling=200, horizontal_mode=False, flipped=False, stroke_mode=False):
@@ -326,7 +358,7 @@ class GameTable:
     def update(self, shot_requester: Optional[Callable[None, None]]):
         if self._active_shot is None:
             if self._shot_queue:
-                self._active_shot = self._shot_queue.pop(0)[1]
+                self._active_shot = self._shot_queue.pop(0)
                 self._active_shot_start_time = time.time()
             else:
                 if shot_requester:
@@ -335,17 +367,18 @@ class GameTable:
 
         time_since_shot_start = (time.time() - self._active_shot_start_time) * self._shot_speed_factor
 
-        if time_since_shot_start > self._active_shot.getDuration():
+        if time_since_shot_start > self._active_shot[1].getDuration():
             for ball in self.game_balls:
-                ball.force_to_end_of_shot_pos(self._active_shot)
+                ball.force_to_end_of_shot_pos(self._active_shot[1])
+            self._active_shot[2]()
             self._active_shot = None
             return
 
         else:
             for ball in self.game_balls:
-                ball.update(time_since_shot_start, self._active_shot, self.sliding_friction_const,
+                ball.update(time_since_shot_start, self._active_shot[1], self.sliding_friction_const,
                             self.rolling_friction_const,
                             self.gravitational_const)
 
-    def add_shot(self, params: ff.ShotParams, shot: ff.Shot):
-        self._shot_queue.append((params, shot))
+    def add_shot(self, params: ff.ShotParams, shot: ff.Shot, callback: Callable[None, None]):
+        self._shot_queue.append((params, shot, callback))

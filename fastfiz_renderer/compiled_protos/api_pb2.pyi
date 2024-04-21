@@ -39,16 +39,20 @@ class ShowGameRequest(_message.Message):
     def __init__(self, turnHistory: _Optional[_Iterable[_Union[GameTurn, _Mapping]]] = ...) -> None: ...
 
 class GameTurn(_message.Message):
-    __slots__ = ("agentName", "tableState", "gameShot", "shotResult")
+    __slots__ = ("turnType", "agentName", "tableStateBefore", "tableStateAfter", "gameShot", "shotResult")
+    TURNTYPE_FIELD_NUMBER: _ClassVar[int]
     AGENTNAME_FIELD_NUMBER: _ClassVar[int]
-    TABLESTATE_FIELD_NUMBER: _ClassVar[int]
+    TABLESTATEBEFORE_FIELD_NUMBER: _ClassVar[int]
+    TABLESTATEAFTER_FIELD_NUMBER: _ClassVar[int]
     GAMESHOT_FIELD_NUMBER: _ClassVar[int]
     SHOTRESULT_FIELD_NUMBER: _ClassVar[int]
+    turnType: str
     agentName: str
-    tableState: TableState
+    tableStateBefore: TableState
+    tableStateAfter: TableState
     gameShot: GameShot
     shotResult: str
-    def __init__(self, agentName: _Optional[str] = ..., tableState: _Optional[_Union[TableState, _Mapping]] = ..., gameShot: _Optional[_Union[GameShot, _Mapping]] = ..., shotResult: _Optional[str] = ...) -> None: ...
+    def __init__(self, turnType: _Optional[str] = ..., agentName: _Optional[str] = ..., tableStateBefore: _Optional[_Union[TableState, _Mapping]] = ..., tableStateAfter: _Optional[_Union[TableState, _Mapping]] = ..., gameShot: _Optional[_Union[GameShot, _Mapping]] = ..., shotResult: _Optional[str] = ...) -> None: ...
 
 class GameShot(_message.Message):
     __slots__ = ("shotParams", "decision", "ballTarget", "pocketTarget", "cuePos")

@@ -154,7 +154,7 @@ class GameHandler:
             self._handle_next_game()
         else:
             shot = self._table_state.executeShot(params)
-            self._game_table.add_shot(params, shot)
+            self._game_table.add_shot(params, shot, lambda: None)
 
     def _verify_table_dimensions(self):
         widths: Set[float] = {table.TABLE_WIDTH for table in

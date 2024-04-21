@@ -30,7 +30,7 @@ class GameBall:
         self.white_color = (255, 255, 255)
         self.black_color = (0, 0, 0)
 
-    def draw(self, scaling=200, horizontal_mode=False, flipped=False, stroke_mode=False):
+    def draw(self, scaling=200, horizontal_mode=False, flipped=False, stroke_mode=False, highlighted_balls: Optional[list[str]] = None):
         dont_draw_states = [ff.Ball.NOTINPLAY, ff.Ball.POCKETED_NE, ff.Ball.POCKETED_E, ff.Ball.POCKETED_SE,
                             ff.Ball.POCKETED_SW, ff.Ball.POCKETED_W, ff.Ball.POCKETED_NW]
 
@@ -40,6 +40,10 @@ class GameBall:
         if self.is_being_dragged:
             stroke(*self.black_color)
             strokeWeight(4)
+
+        if self.is_ball_highlighted(highlighted_balls):
+            fill(*self.ball_colors[ff.Ball.CUE]) if not stroke_mode else fill(*self.black_color)
+            circle(self.position.x * scaling, self.position.y * scaling, GameBall.RADIUS * scaling * 2.5)
 
         fill(*self.color) if not stroke_mode else fill(*self.white_color)
         circle(self.position.x * scaling, self.position.y * scaling, GameBall.RADIUS * scaling * 2)
@@ -132,6 +136,28 @@ class GameBall:
                 relevant_states.append(new_ball_event)
 
         return relevant_states
+
+    def is_ball_highlighted(self, highlighted_balls: Optional[list[str]]) -> bool:
+        number = {
+            "CUE": 0,
+            "ONE": 1,
+            "TWO": 2,
+            "THREE": 3,
+            "FOUR": 4,
+            "FIVE": 5,
+            "SIX": 6,
+            "SEVEN": 7,
+            "EIGHT": 8,
+            "NINE": 9,
+            "TEN": 10,
+            "ELEVEN": 11,
+            "TWELVE": 12,
+            "THIRTEEN": 13,
+            "FOURTEEN": 14,
+            "FIFTEEN": 15
+        }
+        highlighted_balls_numbers = [number.get(number_str) for number_str in highlighted_balls]
+        return self.number in highlighted_balls_numbers
 
 
 class _BallState:

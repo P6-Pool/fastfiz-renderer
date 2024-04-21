@@ -128,4 +128,4 @@ class ShowShotsServiceHandler:
             print("Shot not possible")
         else:
             shot = self._table_state.executeShot(params)
-            self._game_table.add_shot(params, shot)
+            self._game_table.add_shot(params, shot, lambda: None)
