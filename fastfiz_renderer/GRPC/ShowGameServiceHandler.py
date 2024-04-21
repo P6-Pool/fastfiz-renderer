@@ -11,7 +11,8 @@ class ShowGameServiceHandler:
     _instance = None
 
     def __init__(self, mac_mode=False, window_pos: Tuple[int, int] = (100, 100), frames_per_second: int = 60,
-                 scaling: int = 200, horizontal_mode: bool = False, flipped: bool = False, auto_play: bool = False):
+                 scaling: int = 200, horizontal_mode: bool = False, flipped: bool = False, auto_play: bool = False,
+                 shot_speed_factor: int = 1):
 
         if ShowGameServiceHandler._instance is None:
             self._game_table: Optional[GameTable] = None
@@ -24,6 +25,7 @@ class ShowGameServiceHandler:
             self._stroke_mode: bool = False
             self._flipped: bool = flipped
             self._auto_play: bool = auto_play
+            self._shot_speed_factor: int = shot_speed_factor
 
             self._games: list[api_pb2.Game] = []
             self._active_game_idx: Optional[int] = None
@@ -43,7 +45,7 @@ class ShowGameServiceHandler:
             raise Exception("This class is a singleton!")
 
     def start_server_window(self):
-        self._game_table = GameTable.from_table_state(ff.TableState(), 1)
+        self._game_table = GameTable.from_table_state(ff.TableState(), self._shot_speed_factor)
 
         width = int(self._game_table.width * self._scaling)
         length = int(self._game_table.length * self._scaling)
@@ -82,14 +84,31 @@ class ShowGameServiceHandler:
                 self._handle_shoot()
             elif event.key == "r" or event.key == "R":
                 self.update_table_state(self._org_table_state)
-            elif event.key in [str(val) for val in range(1, 10)]:
-                self._shot_vel = int(event.key.name)
-                self.update_table_state(self._org_table_state)
+            elif event.key in ["1", "2", "3", "4", "5", "6"]:
+                self._shot_speed_factor = self._get_shot_speed_factor(event.key)
+                self._game_table._shot_speed_factor = self._shot_speed_factor
 
         run(renderer="skia", frame_rate=self._frames_per_second, sketch_draw=_draw, sketch_setup=_setup,
             sketch_key_released=_key_released, window_xpos=self._window_pos[0],
             window_ypos=self._window_pos[1],
             window_title="Cue Canvas Server")
+
+    @staticmethod
+    def _get_shot_speed_factor(key):
+        if key == "1":
+            return 1
+        elif key == "2":
+            return 2
+        elif key == "3":
+            return 3
+        elif key == "4":
+            return 4
+        elif key == "5":
+            return 0.5
+        elif key == "6":
+            return 0.25
+        else:
+            return 1
 
     def _handle_shift_turn(self, is_next):
         if self._turn_history:
@@ -113,7 +132,8 @@ class ShowGameServiceHandler:
                 self._highlighted_ball = None
                 self._highlighted_pocket = None
             self._shot_params = turn.gameShot.shotParams
-            print(f"{self._active_turn_idx + 1} / {len(self._turn_history)} - {turn.agentName} - {turn.gameShot.decision} - {turn.turnType} - {turn.shotResult}")
+            print(
+                f"{self._active_turn_idx + 1} / {len(self._turn_history)} - {turn.agentName} - {turn.gameShot.decision} - {turn.turnType} - {turn.shotResult}")
             self.update_table_state(turn.tableStateBefore)
 
     def _handle_shift_game(self, is_next):
@@ -164,7 +184,7 @@ class ShowGameServiceHandler:
 
         for ball in table_state.balls:
             new_table_state.setBall(ball.number, ball.state, ball.pos.x, ball.pos.y)
-        self._game_table = GameTable.from_table_state(new_table_state, 1)
+        self._game_table = GameTable.from_table_state(new_table_state, self._shot_speed_factor)
         self._org_table_state = table_state
         self._table_state = new_table_state
         self._shot_available = True
