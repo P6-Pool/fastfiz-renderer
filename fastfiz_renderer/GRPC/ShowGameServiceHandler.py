@@ -3,6 +3,9 @@ from p5 import *
 import fastfiz as ff
 from ..compiled_protos import api_pb2
 from vectormath import Vector2
+import os
+import time
+from sys import platform
 
 from fastfiz_renderer.GameTable import GameTable
 
@@ -10,14 +13,22 @@ from fastfiz_renderer.GameTable import GameTable
 class ShowGameServiceHandler:
     _instance = None
 
-    def __init__(self, mac_mode=False, window_pos: Tuple[int, int] = (100, 100), frames_per_second: int = 60,
-                 scaling: int = 200, horizontal_mode: bool = False, flipped: bool = False, auto_play: bool = False,
-                 shot_speed_factor: int = 1, screenshot_dir: str = "."):
-
+    def __init__(
+        self,
+        window_pos: Tuple[int, int] = (100, 100),
+        frames_per_second: int = 60,
+        scaling: int = 200,
+        horizontal_mode: bool = False,
+        flipped: bool = False,
+        auto_play: bool = False,
+        shot_speed_factor: int = 1,
+        screenshot_dir: str = ".",
+    ):
         if ShowGameServiceHandler._instance is None:
             self._game_table: Optional[GameTable] = None
 
-            self._mac_mode: bool = mac_mode
+            self._renderer = "skia"
+            self._mac_mode: bool = platform == "darwin" and self._renderer == "skia"
             self._window_pos: Tuple[int, int] = window_pos
             self._frames_per_second: int = frames_per_second
             self._scaling: int = scaling
@@ -46,7 +57,9 @@ class ShowGameServiceHandler:
             raise Exception("This class is a singleton!")
 
     def start_server_window(self):
-        self._game_table = GameTable.from_table_state(ff.TableState(), self._shot_speed_factor)
+        self._game_table = GameTable.from_table_state(
+            ff.TableState(), self._shot_speed_factor
+        )
 
         width = int(self._game_table.width * self._scaling)
         length = int(self._game_table.length * self._scaling)
@@ -64,13 +77,15 @@ class ShowGameServiceHandler:
         def _draw():
             background(255)
             self._game_table.update(None)
-            self._game_table.draw(self._scaling * 2 if self._mac_mode else self._scaling, self._horizontal_mode,
-                                  self._flipped,
-                                  self._stroke_mode,
-                                  [self._highlighted_ball],
-                                  [self._highlighted_pocket],
-                                  self._shot_params
-                                  )
+            self._game_table.draw(
+                self._scaling * 2 if self._mac_mode else self._scaling,
+                self._horizontal_mode,
+                self._flipped,
+                self._stroke_mode,
+                [self._highlighted_ball],
+                [self._highlighted_pocket],
+                self._shot_params,
+            )
 
         def _key_released(event):
             if event.key == "RIGHT":
@@ -84,18 +99,29 @@ class ShowGameServiceHandler:
             elif event.key == "UP":
                 self._handle_shoot()
             elif event.key == "s" or event.key == "S":
+                os.makedirs(self._screenshot_dir, exist_ok=True)
                 p5.renderer.canvas.getSurface().makeImageSnapshot().save(
-                self._screenshot_dir + "/" + time.strftime("%Y%m%d-%H%M") + ".png")
+                    os.path.join(
+                        self._screenshot_dir,
+                        time.strftime("%Y-%m-%d_%T") + ".png",
+                    )
+                )
             elif event.key == "r" or event.key == "R":
                 self.update_table_state(self._org_table_state)
             elif event.key in ["1", "2", "3", "4", "5", "6"]:
                 self._shot_speed_factor = self._get_shot_speed_factor(event.key)
                 self._game_table._shot_speed_factor = self._shot_speed_factor
 
-        run(renderer="skia", frame_rate=self._frames_per_second, sketch_draw=_draw, sketch_setup=_setup,
-            sketch_key_released=_key_released, window_xpos=self._window_pos[0],
+        run(
+            renderer=self._renderer,
+            frame_rate=self._frames_per_second,
+            sketch_draw=_draw,
+            sketch_setup=_setup,
+            sketch_key_released=_key_released,
+            window_xpos=self._window_pos[0],
             window_ypos=self._window_pos[1],
-            window_title="Cue Canvas Server")
+            window_title="Cue Canvas Server",
+        )
 
     @staticmethod
     def _get_shot_speed_factor(key):
@@ -131,13 +157,16 @@ class ShowGameServiceHandler:
 
             if turn.turnType != "TT_BREAK":
                 self._highlighted_ball = turn.gameShot.ballTarget
-                self._highlighted_pocket = self._turn_history[self._active_turn_idx].gameShot.pocketTarget
+                self._highlighted_pocket = self._turn_history[
+                    self._active_turn_idx
+                ].gameShot.pocketTarget
             else:
                 self._highlighted_ball = None
                 self._highlighted_pocket = None
             self._shot_params = turn.gameShot.shotParams
             print(
-                f"{self._active_turn_idx + 1} / {len(self._turn_history)} - {turn.agentName} - {turn.gameShot.decision} - {turn.turnType} - {turn.shotResult}")
+                f"{self._active_turn_idx + 1} / {len(self._turn_history)} - {turn.agentName} - {turn.gameShot.decision} - {turn.turnType} - {turn.shotResult}"
+            )
             self.update_table_state(turn.tableStateBefore)
 
     def _handle_shift_game(self, is_next):
@@ -153,7 +182,9 @@ class ShowGameServiceHandler:
                     self._active_game_idx -= 1
                 else:
                     self._active_game_idx = len(self._games) - 1
-                self._active_turn_idx = len(self._games[self._active_game_idx].turnHistory) - 1
+                self._active_turn_idx = (
+                    len(self._games[self._active_game_idx].turnHistory) - 1
+                )
 
             game = self._games[self._active_game_idx]
             print(f"Game {self._active_game_idx + 1} / {len(self._games)}")
@@ -188,7 +219,9 @@ class ShowGameServiceHandler:
 
         for ball in table_state.balls:
             new_table_state.setBall(ball.number, ball.state, ball.pos.x, ball.pos.y)
-        self._game_table = GameTable.from_table_state(new_table_state, self._shot_speed_factor)
+        self._game_table = GameTable.from_table_state(
+            new_table_state, self._shot_speed_factor
+        )
         self._org_table_state = table_state
         self._table_state = new_table_state
         self._shot_available = True
@@ -200,11 +233,15 @@ class ShowGameServiceHandler:
 
             if gs.decision != "DEC_CONCEDE":
                 params = gs.shotParams
-                params = ff.ShotParams(params.a, params.b, params.theta, params.phi, params.v)
+                params = ff.ShotParams(
+                    params.a, params.b, params.theta, params.phi, params.v
+                )
 
                 shot = self._table_state.executeShot(params)
 
-                self._game_table.add_shot(params, shot, lambda: self._handle_shot_finished())
+                self._game_table.add_shot(
+                    params, shot, lambda: self._handle_shot_finished()
+                )
                 self._shot_available = False
                 self._shot_params = None
             else:
