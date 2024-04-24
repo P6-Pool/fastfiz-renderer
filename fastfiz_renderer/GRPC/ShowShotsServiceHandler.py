@@ -12,7 +12,7 @@ class ShowShotsServiceHandler:
     _instance = None
 
     def __init__(self, mac_mode=False, window_pos: Tuple[int, int] = (100, 100), frames_per_second: int = 60,
-                 scaling: int = 200, horizontal_mode: bool = False, flipped=False):
+                 scaling: int = 200, horizontal_mode: bool = False, flipped=False, screenshot_dir: str = "."):
         if ShowShotsServiceHandler._instance is None:
             self._game_table: Optional[GameTable] = None
 
@@ -23,6 +23,7 @@ class ShowShotsServiceHandler:
             self._horizontal_mode: bool = horizontal_mode
             self._stroke_mode: bool = False
             self._flipped: bool = flipped
+            self._screenshot_dir: str = screenshot_dir
 
             self._shotTrees: list[api_pb2.Shot] = []
             self._active_shot_tree_idx: Optional[int] = None
@@ -78,6 +79,8 @@ class ShowShotsServiceHandler:
                 self._stroke_mode = not self._stroke_mode
             elif event.key == "UP":
                 self._handle_shoot()
+            elif event.key == "s" or event.key == "S":
+                p5.renderer.canvas.getSurface().makeImageSnapshot().save(self._screenshot_dir + "/" + time.strftime("%Y%m%d-%H%M") + ".png")
             elif event.key == "r" or event.key == "R":
                 self.update_table_state(self._org_table_state)
             elif event.key in [str(val) for val in range(1, 10)]:

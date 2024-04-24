@@ -13,7 +13,7 @@ class GameHandler:
     Game = Tuple[ff.TableState, ShotDecider]
 
     def __init__(self, mac_mode=False, window_pos: Tuple[int, int] = (100, 100), frames_per_second: int = 60,
-                 scaling: int = 200, horizontal_mode: bool = False):
+                 scaling: int = 200, horizontal_mode: bool = False, flipped: bool = False, screenshot_dir: str = "."):
         if GameHandler._instance is None:
             self._game_number: int = 0
             self._games: list[GameHandler.Game] = []
@@ -27,9 +27,11 @@ class GameHandler:
             self._frames_per_second: int = frames_per_second
             self._scaling: int = scaling
             self._horizontal_mode: bool = horizontal_mode
+            self._flipped: bool = flipped
             self._stroke_mode: bool = False
             self._grab_mode: bool = False
             self._shot_speed_factor: float = 1
+            self._screenshot_path: str = screenshot_dir
 
             GameHandler._instance = self
         else:
@@ -73,7 +75,7 @@ class GameHandler:
             background(255)
             self._game_table.update(shot_requester)
             self._game_table.draw(self._scaling * 2 if self._mac_mode else self._scaling, self._horizontal_mode,
-                                  self._stroke_mode)
+                                  self._flipped, self._stroke_mode)
 
         def _key_released(event):
             if event.key == "RIGHT":
@@ -83,6 +85,8 @@ class GameHandler:
             elif event.key == "n" or event.key == "N":
                 print(f"{self._game_number}: Game skipped")
                 self._handle_next_game()
+            elif event.key == "s" or event.key == "S":
+                p5.renderer.canvas.getSurface().makeImageSnapshot().save(self._screenshot_dir + "/" + time.strftime("%Y%m%d-%H%M") + ".png")
             elif event.key == "f" or event.key == "F":
                 self._stroke_mode = not self._stroke_mode
             elif event.key == "g" or event.key == "G":

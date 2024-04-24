@@ -12,7 +12,7 @@ class ShowGameServiceHandler:
 
     def __init__(self, mac_mode=False, window_pos: Tuple[int, int] = (100, 100), frames_per_second: int = 60,
                  scaling: int = 200, horizontal_mode: bool = False, flipped: bool = False, auto_play: bool = False,
-                 shot_speed_factor: int = 1):
+                 shot_speed_factor: int = 1, screenshot_dir: str = "."):
 
         if ShowGameServiceHandler._instance is None:
             self._game_table: Optional[GameTable] = None
@@ -26,6 +26,7 @@ class ShowGameServiceHandler:
             self._flipped: bool = flipped
             self._auto_play: bool = auto_play
             self._shot_speed_factor: int = shot_speed_factor
+            self._screenshot_dir: str = screenshot_dir
 
             self._games: list[api_pb2.Game] = []
             self._active_game_idx: Optional[int] = None
@@ -82,6 +83,9 @@ class ShowGameServiceHandler:
                 self._auto_play = not self._auto_play
             elif event.key == "UP":
                 self._handle_shoot()
+            elif event.key == "s" or event.key == "S":
+                p5.renderer.canvas.getSurface().makeImageSnapshot().save(
+                self._screenshot_dir + "/" + time.strftime("%Y%m%d-%H%M") + ".png")
             elif event.key == "r" or event.key == "R":
                 self.update_table_state(self._org_table_state)
             elif event.key in ["1", "2", "3", "4", "5", "6"]:

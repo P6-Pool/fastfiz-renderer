@@ -58,7 +58,7 @@ class GameTable:
         return cls(table.TABLE_WIDTH, table.TABLE_LENGTH, table.SIDE_POCKET_WIDTH, table.CORNER_POCKET_WIDTH,
                    table.MU_ROLLING, table.MU_SLIDING, table.g, game_balls, shot_speed_factor)
 
-    def draw(self, scaling=200, horizontal_mode=False, flipped=False, stroke_mode=False, highlighted_balls:Optional[list[str]] = None, highlighted_pockets: Optional[list[str]] = None, shot_params: Optional[api_pb2.ShotParams] = None):
+    def draw(self, scaling=200, horizontal_mode=False, flipped=False, stroke_mode=False, highlighted_balls: list[str] = [], highlighted_pockets: list[str] = [], shot_params: Optional[api_pb2.ShotParams] = None):
         if horizontal_mode:
             rotate(PI / 2)
             translate(0, -int(self.length * scaling))
