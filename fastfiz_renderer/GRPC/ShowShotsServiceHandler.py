@@ -92,9 +92,6 @@ class ShowShotsServiceHandler:
                     canvas=p5.renderer
                 )
 
-            fill(255, 255, 255)
-            circle(30, 30, 50)
-
         def _key_released(event):
             if event.key == "RIGHT":
                 if self._shot_trees:
@@ -171,11 +168,7 @@ class ShowShotsServiceHandler:
                 canvas=self._ss_buffer.renderer
             )
 
-        self._ss_buffer.renderer.load_pixels()
-        s = self._ss_buffer.renderer.pimage
-        s.save(os.path.join(self._ss_dir, time.strftime("%Y-%m-%d_%T") + ".png"))
-
-        # save_canvas(os.path.join(self._ss_dir, time.strftime("%Y-%m-%d_%T") + ".png"), self._ss_buffer)
+        save_canvas(os.path.join(self._ss_dir, time.strftime("%Y-%m-%d_%T") + ".png"), self._ss_buffer)
 
     def _handle_shoot(self):
         target: Vector2 = Vector2(

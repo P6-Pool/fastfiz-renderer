@@ -1,8 +1,7 @@
-from typing import Tuple, Optional
+from typing import Tuple
 from p5 import *
 import fastfiz as ff
 from ..compiled_protos import api_pb2
-from vectormath import Vector2
 import os
 import time
 from sys import platform
@@ -14,15 +13,15 @@ class ShowGameServiceHandler:
     _instance = None
 
     def __init__(
-        self,
-        window_pos: Tuple[int, int] = (100, 100),
-        frames_per_second: int = 60,
-        scaling: int = 200,
-        horizontal_mode: bool = False,
-        flipped: bool = False,
-        auto_play: bool = False,
-        shot_speed_factor: int = 1,
-        screenshot_dir: str = ".",
+            self,
+            window_pos: Tuple[int, int] = (100, 100),
+            frames_per_second: int = 60,
+            scaling: int = 200,
+            horizontal_mode: bool = False,
+            flipped: bool = False,
+            auto_play: bool = False,
+            shot_speed_factor: int = 1,
+            screenshot_dir: str = ".",
     ):
         if ShowGameServiceHandler._instance is None:
             self._game_table: Optional[GameTable] = None
@@ -37,7 +36,10 @@ class ShowGameServiceHandler:
             self._flipped: bool = flipped
             self._auto_play: bool = auto_play
             self._shot_speed_factor: int = shot_speed_factor
-            self._screenshot_dir: str = screenshot_dir
+
+            self._ss_dir: str = screenshot_dir
+            self._ss_buffer: Optional[p5.core.graphics.Graphics] = None
+            self._ss_scaling: int = 2000
 
             self._games: list[api_pb2.Game] = []
             self._active_game_idx: Optional[int] = None
@@ -64,13 +66,17 @@ class ShowGameServiceHandler:
         width = int(self._game_table.width * self._scaling)
         length = int(self._game_table.length * self._scaling)
 
+        ss_width = int(self._game_table.width * self._ss_scaling)
+        ss_length = int(self._game_table.length * self._ss_scaling)
+
         if self._horizontal_mode:
             width, length = length, width
+            ss_width, ss_length = ss_length, ss_width
 
         def _setup():
             size(width, length)
+            self._ss_buffer = create_graphics(ss_width, ss_length)
             ellipseMode(CENTER)
-            textAlign(CENTER, CENTER)
             if not self._stroke_mode:
                 noStroke()
 
@@ -82,9 +88,11 @@ class ShowGameServiceHandler:
                 self._horizontal_mode,
                 self._flipped,
                 self._stroke_mode,
+                1 if self._stroke_mode else 4,
                 [self._highlighted_ball],
                 [self._highlighted_pocket],
                 self._shot_params,
+                canvas=p5.renderer
             )
 
         def _key_released(event):
@@ -99,13 +107,7 @@ class ShowGameServiceHandler:
             elif event.key == "UP":
                 self._handle_shoot()
             elif event.key == "s" or event.key == "S":
-                os.makedirs(self._screenshot_dir, exist_ok=True)
-                p5.renderer.canvas.getSurface().makeImageSnapshot().save(
-                    os.path.join(
-                        self._screenshot_dir,
-                        time.strftime("%Y-%m-%d_%T") + ".png",
-                    )
-                )
+                self._handle_screenshot()
             elif event.key == "r" or event.key == "R":
                 self.update_table_state(self._org_table_state)
             elif event.key in ["1", "2", "3", "4", "5", "6"]:
@@ -139,6 +141,25 @@ class ShowGameServiceHandler:
             return 0.25
         else:
             return 1
+
+    def _handle_screenshot(self):
+        os.makedirs(self._ss_dir, exist_ok=True)
+
+        self._ss_buffer.background(255)
+
+        self._game_table.draw(
+            self._ss_scaling,
+            self._horizontal_mode,
+            self._flipped,
+            self._stroke_mode,
+            3 if self._stroke_mode else 10,
+            [self._highlighted_ball],
+            [self._highlighted_pocket],
+            self._shot_params,
+            canvas=self._ss_buffer.renderer
+        )
+
+        save_canvas(os.path.join(self._ss_dir, time.strftime("%Y-%m-%d_%T") + ".png"), self._ss_buffer)
 
     def _handle_shift_turn(self, is_next):
         if self._turn_history:
@@ -183,7 +204,7 @@ class ShowGameServiceHandler:
                 else:
                     self._active_game_idx = len(self._games) - 1
                 self._active_turn_idx = (
-                    len(self._games[self._active_game_idx].turnHistory) - 1
+                        len(self._games[self._active_game_idx].turnHistory) - 1
                 )
 
             game = self._games[self._active_game_idx]

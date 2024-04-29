@@ -257,8 +257,8 @@ class GameTable:
                            SW_highlighted)  # SW
 
         if shot_params:
-            stroke(*self.board_marking_color) if not stroke_mode else stroke(*self.black_color)
-            strokeWeight(8)
+            stroke(102, 142, 131) if not stroke_mode else stroke(*self.black_color)
+            strokeWeight(stroke_weight * 2)
             for ball in self.game_balls:
                 if ball.number == 0 and ball.state == 1:
                     push()
@@ -266,7 +266,7 @@ class GameTable:
                               (ball.position.y + self.rail_width + self.wood_width) * scaling)
                     push()
                     rotate(shot_params.phi * PI / 180)
-                    length = GameBall.RADIUS * scaling + shot_params.v * 20
+                    length = GameBall.RADIUS * scaling + shot_params.v * scaling * 0.03
                     line(0, 0, length, 0)
                     pop()
                     pop()
