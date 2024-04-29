@@ -32,3 +32,6 @@ share/python-wheels/
 *.egg
 MANIFEST
 **/*.png
+
+screenshots
+.DS_Store

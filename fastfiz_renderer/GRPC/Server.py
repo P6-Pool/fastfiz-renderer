@@ -23,6 +23,7 @@ class Server:
 
         def ShowShots(self, request: api_pb2.ShowShotsRequest, context):
             self.outer_instance.show_shots_handler.update_shots_trees(request.shots)
+            self.outer_instance.show_shots_handler.update_table_state(request.tableState)
             return empty_pb2.Empty()
 
         def ShowGames(self, request: api_pb2.ShowGamesRequest, context):
