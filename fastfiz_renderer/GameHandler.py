@@ -41,7 +41,10 @@ class GameHandler:
             self._stroke_mode: bool = False
             self._grab_mode: bool = False
             self._shot_speed_factor: float = 1
-            self._screenshot_dir: str = screenshot_dir
+
+            self._ss_dir: str = screenshot_dir
+            self._ss_buffer: Optional[p5.core.graphics.Graphics] = None
+            self._ss_scaling: int = 2000
 
             GameHandler._instance = self
         else:
@@ -76,13 +79,17 @@ class GameHandler:
         width = int(self._game_table.width * self._scaling)
         length = int(self._game_table.length * self._scaling)
 
+        ss_width = int(self._game_table.width * self._ss_scaling)
+        ss_length = int(self._game_table.length * self._ss_scaling)
+
         if self._horizontal_mode:
             width, length = length, width
+            ss_width, ss_length = ss_length, ss_width
 
         def _setup():
             size(width, length)
+            self._ss_buffer = create_graphics(ss_width, ss_length)
             ellipseMode(CENTER)
-            textAlign(CENTER, CENTER)
             if not self._stroke_mode:
                 noStroke()
 
@@ -94,6 +101,8 @@ class GameHandler:
                 self._horizontal_mode,
                 self._flipped,
                 self._stroke_mode,
+                1 if self._stroke_mode else 4,
+                canvas=p5.renderer
             )
 
         def _key_released(event):
@@ -105,13 +114,7 @@ class GameHandler:
                 print(f"{self._game_number}: Game skipped")
                 self._handle_next_game()
             elif event.key == "s" or event.key == "S":
-                os.makedirs(self._screenshot_dir, exist_ok=True)
-                p5.renderer.canvas.getSurface().makeImageSnapshot().save(
-                    os.path.join(
-                        self._screenshot_dir,
-                        time.strftime("%Y-%m-%d_%T") + ".png",
-                    )
-                )
+                self._handle_screenshot()
             elif event.key == "f" or event.key == "F":
                 self._stroke_mode = not self._stroke_mode
             elif event.key == "g" or event.key == "G":
@@ -167,6 +170,22 @@ class GameHandler:
             window_ypos=self._window_pos[1],
             window_title="Cue Canvas",
         )
+
+    def _handle_screenshot(self):
+        os.makedirs(self._ss_dir, exist_ok=True)
+
+        self._ss_buffer.background(255)
+
+        self._game_table.draw(
+            self._ss_scaling,
+            self._horizontal_mode,
+            self._flipped,
+            self._stroke_mode,
+            3 if self._stroke_mode else 10,
+            canvas=self._ss_buffer.renderer,
+        )
+
+        save_canvas(os.path.join(self._ss_dir, time.strftime("%Y-%m-%d_%T") + ".png"), self._ss_buffer)
 
     def _handle_next_game(self):
         if self._games:
