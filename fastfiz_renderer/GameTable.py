@@ -4,7 +4,6 @@ import fastfiz as ff
 from p5 import *
 import vectormath as vmath
 import fastfiz_renderer.compiled_protos.api_pb2 as api_pb2
-from vectormath import Vector2
 
 from .GameBall import GameBall
 
@@ -58,7 +57,16 @@ class GameTable:
         return cls(table.TABLE_WIDTH, table.TABLE_LENGTH, table.SIDE_POCKET_WIDTH, table.CORNER_POCKET_WIDTH,
                    table.MU_ROLLING, table.MU_SLIDING, table.g, game_balls, shot_speed_factor)
 
-    def draw(self, scaling=200, horizontal_mode=False, flipped=False, stroke_mode=False, highlighted_balls: list[str] = [], highlighted_pockets: list[str] = [], shot_params: Optional[api_pb2.ShotParams] = None):
+    def draw(self, scaling=200, horizontal_mode=False, flipped=False, stroke_mode=False, stroke_weight=2,
+             highlighted_balls: list[str] = [], highlighted_pockets: list[str] = [],
+             shot_params: Optional[api_pb2.ShotParams] = None, canvas=None):
+
+        if canvas:
+            old_canvas = p5.renderer
+            p5.renderer = canvas
+
+        push()
+
         if horizontal_mode:
             rotate(PI / 2)
             translate(0, -int(self.length * scaling))
@@ -66,6 +74,9 @@ class GameTable:
         if flipped:
             translate(0, int(self.length * scaling))
             scale(1, -1)
+
+        strokeWeight(stroke_weight)
+        noStroke() if not stroke_mode else stroke(*self.black_color)
 
         # Wood
         fill(*self.wood_color) if not stroke_mode else fill(*self.white_color)
@@ -102,7 +113,6 @@ class GameTable:
         translate(0, int(self.board_pos * scaling))
 
         # Arc
-        strokeWeight(ceil(scaling / 100)) if not stroke_mode else strokeWeight(1)
         stroke(*self.board_marking_color) if not stroke_mode else stroke(*self.black_color)
         noFill()
         arc(
@@ -123,7 +133,6 @@ class GameTable:
 
             # Lines
             if i == 2 or i == 6:
-                strokeWeight(ceil(scaling / 100)) if not stroke_mode else strokeWeight(1)
                 stroke(*self.board_marking_color) if not stroke_mode else stroke(*self.black_color)
                 line(self.board_pos * scaling,
                      self.board_length * scaling / 8 * i,
@@ -217,7 +226,8 @@ class GameTable:
                 circle(self.corner_pocket_width * scaling / 2, 0, self.corner_pocket_width / 4 * scaling)
 
             line(0, 0, 0, self.corner_pocket_width * scaling / 2)
-            line(self.corner_pocket_width * scaling, 0, self.corner_pocket_width * scaling, self.corner_pocket_width * scaling / 2)
+            line(self.corner_pocket_width * scaling, 0, self.corner_pocket_width * scaling,
+                 self.corner_pocket_width * scaling / 2)
 
             pop()
 
@@ -236,12 +246,15 @@ class GameTable:
         draw_side_pocket(PI / 4 * 2, ((self.width - self.wood_width - self.rail_width) * scaling, (
                 self.board_pos + self.board_length / 2 - self.side_pocket_width / 2) * scaling), E_highlighted)  # E
         draw_corner_pocket(PI / 4 * 3, (
-            (self.width - self.wood_width) * scaling, (self.length - self.wood_width - offset) * scaling), NE_highlighted)  # NE
+            (self.width - self.wood_width) * scaling, (self.length - self.wood_width - offset) * scaling),
+                           NE_highlighted)  # NE
         draw_side_pocket(PI / 4 * 6, (self.board_pos * scaling, (
                 self.board_pos + self.board_length / 2 + self.side_pocket_width / 2) * scaling), W_highlighted)  # W
         draw_corner_pocket(PI / 4 * 5,
-                           ((self.wood_width + offset) * scaling, (self.length - self.wood_width) * scaling), NW_highlighted)  # NW
-        draw_corner_pocket(PI / 4 * 7, (self.wood_width * scaling, (self.wood_width + offset) * scaling), SW_highlighted)  # SW
+                           ((self.wood_width + offset) * scaling, (self.length - self.wood_width) * scaling),
+                           NW_highlighted)  # NW
+        draw_corner_pocket(PI / 4 * 7, (self.wood_width * scaling, (self.wood_width + offset) * scaling),
+                           SW_highlighted)  # SW
 
         if shot_params:
             stroke(*self.board_marking_color) if not stroke_mode else stroke(*self.black_color)
@@ -249,7 +262,8 @@ class GameTable:
             for ball in self.game_balls:
                 if ball.number == 0 and ball.state == 1:
                     push()
-                    translate((ball.position.x + self.rail_width + self.wood_width) * scaling, (ball.position.y + self.rail_width + self.wood_width) * scaling)
+                    translate((ball.position.x + self.rail_width + self.wood_width) * scaling,
+                              (ball.position.y + self.rail_width + self.wood_width) * scaling)
                     push()
                     rotate(shot_params.phi * PI / 180)
                     length = GameBall.RADIUS * scaling + shot_params.v * 20
@@ -257,7 +271,7 @@ class GameTable:
                     pop()
                     pop()
                     break
-            strokeWeight(1)
+            strokeWeight(stroke_weight)
 
         noStroke() if not stroke_mode else stroke(*self.black_color)
 
@@ -269,17 +283,31 @@ class GameTable:
             ball.draw(scaling, horizontal_mode, flipped, stroke_mode, highlighted_balls)
         pop()
 
-    def draw_shot_tree(self, shot_tree: api_pb2.Shot, scaling=200, horizontal_mode=False, flipped=False, stroke_mode=False):
+        pop()
+
+        if canvas:
+            p5.renderer = old_canvas
+
+    def draw_shot_tree(self, shot_tree: api_pb2.Shot, scaling=200, horizontal_mode=False, flipped=False,
+                       stroke_weight=2, canvas=None, depth=1):
+        if canvas:
+            old_canvas = p5.renderer
+            p5.renderer = canvas
+
         push()
 
         if horizontal_mode:
             rotate(PI / 2)
             translate(0, -int(self.length * scaling))
 
+        if flipped:
+            translate(0, int(self.length * scaling))
+            scale(1, -1)
+
         translate(int(self.board_pos * scaling),
                   int(self.board_pos * scaling))
 
-        strokeWeight(2)
+        strokeWeight(stroke_weight)
         noFill()
 
         # Leftmost
@@ -300,15 +328,25 @@ class GameTable:
         if shot_tree.next.IsInitialized():
             # Lines
             stroke(*self.red_color)
-            line(rm.x * scaling, rm.y * scaling, shot_tree.next.leftMost.x * scaling, shot_tree.next.leftMost.y * scaling)
+            line(rm.x * scaling, rm.y * scaling, shot_tree.next.leftMost.x * scaling,
+                 shot_tree.next.leftMost.y * scaling)
             stroke(*self.blue_color)
-            line(lm.x * scaling, lm.y * scaling, shot_tree.next.rightMost.x * scaling, shot_tree.next.rightMost.y * scaling)
+            line(lm.x * scaling, lm.y * scaling, shot_tree.next.rightMost.x * scaling,
+                 shot_tree.next.rightMost.y * scaling)
 
             # Id tag
             stroke(*self.black_color)
             push()
-            text_x_pos = shot_tree.posB1.x * scaling + (shot_tree.next.rightMost.x - shot_tree.posB1.x) * scaling / 2
-            text_y_pos = shot_tree.posB1.y * scaling + (shot_tree.next.rightMost.y - shot_tree.posB1.y) * scaling / 2
+            text_x_pos = shot_tree.ghostBall.x * scaling + (shot_tree.next.ghostBall.x - shot_tree.ghostBall.x) * scaling / 2
+            text_y_pos = shot_tree.ghostBall.y * scaling + (shot_tree.next.ghostBall.y - shot_tree.ghostBall.y) * scaling / 2
+
+            mag = math.sqrt(text_x_pos**2 + text_y_pos**2)
+
+            offset_x = text_y_pos / mag * (scaling * 0.08)
+            offset_y = -text_x_pos / mag * (scaling * 0.08)
+
+            text_x_pos += offset_x
+            text_y_pos += offset_y
 
             translate(int(text_x_pos), int(text_y_pos))
             if horizontal_mode:
@@ -317,43 +355,21 @@ class GameTable:
             if flipped:
                 scale(1, -1)
 
+            text_align(CENTER, CENTER)
             ts = int(scaling / 30)
             textSize(ts)
-            fill(*self.black_color)
-            text(str(shot_tree.next.id), 0, ts * 0.8)
+            fill(*GameBall.ball_colors[ff.Ball.EIGHT])
+            noStroke()
+            text(str(shot_tree.next.id), 0, ts * 0.80)
             pop()
 
             pop()
-            self.draw_shot_tree(shot_tree.next, scaling, horizontal_mode, flipped)
-        if shot_tree.branch.IsInitialized():
-            # Lines
-            stroke(*self.red_color)
-            line(rm.x * scaling, rm.y * scaling, shot_tree.branch.leftMost.x * scaling, shot_tree.branch.leftMost.y * scaling)
-            stroke(*self.blue_color)
-            line(lm.x * scaling, lm.y * scaling, shot_tree.branch.rightMost.x * scaling, shot_tree.branch.rightMost.y * scaling)
-
-            # Id tag
-            stroke(*self.black_color)
-            push()
-            text_x_pos = shot_tree.posB1.x * scaling + (shot_tree.next.rightMost.x - shot_tree.posB1.x) * scaling / 2
-            text_y_pos = shot_tree.posB1.y * scaling + (shot_tree.next.rightMost.y - shot_tree.posB1.y) * scaling / 2
-
-            translate(int(text_x_pos), int(text_y_pos))
-            if horizontal_mode:
-                rotate(-PI / 2)
-
-            if flipped:
-                scale(1, -1)
-
-            ts = int(scaling / 30)
-            textSize(ts)
-            text(str(shot_tree.next.id), 0, ts * 0.8)
+            self.draw_shot_tree(shot_tree.next, scaling, horizontal_mode, flipped, stroke_weight, canvas, depth=depth+1)
+        else:
             pop()
 
-            pop()
-            self.draw_shot_tree(shot_tree.branch, scaling, horizontal_mode, flipped)
-
-        noStroke() if not stroke_mode else stroke(*self.black_color)
+        if canvas:
+            p5.renderer = old_canvas
 
     def update(self, shot_requester: Optional[Callable[None, None]]):
         if self._active_shot is None:

@@ -58,6 +58,7 @@ class GameBall:
         if stroke_mode:
             push()
             translate(self.position.x * scaling, self.position.y * scaling)
+            text_align(CENTER, CENTER)
 
             if horizontal_mode:
                 rotate(-PI / 2)
@@ -68,7 +69,7 @@ class GameBall:
             ts = int(scaling / 30)
             textSize(ts)
             fill(*GameBall.ball_colors[ff.Ball.EIGHT])
-            text(str(self.number), 0, ts * 0.8)
+            text(str(self.number), 0, ts * 0.80)
             pop()
 
     def update(self, time_since_shot_start: float, shot: ff.Shot, sliding_friction_const: float,

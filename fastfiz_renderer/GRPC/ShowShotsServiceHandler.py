@@ -1,5 +1,6 @@
 from typing import Tuple
 
+import p5.core.graphics
 from p5 import *
 import fastfiz as ff
 from ..compiled_protos import api_pb2
@@ -14,13 +15,13 @@ class ShowShotsServiceHandler:
     _instance = None
 
     def __init__(
-        self,
-        window_pos: Tuple[int, int] = (100, 100),
-        frames_per_second: int = 60,
-        scaling: int = 200,
-        horizontal_mode: bool = False,
-        flipped=False,
-        screenshot_dir: str = ".",
+            self,
+            window_pos: Tuple[int, int] = (100, 100),
+            frames_per_second: int = 60,
+            scaling: int = 200,
+            horizontal_mode: bool = False,
+            flipped=False,
+            screenshot_dir: str = ".",
     ):
         if ShowShotsServiceHandler._instance is None:
             self._game_table: Optional[GameTable] = None
@@ -33,9 +34,12 @@ class ShowShotsServiceHandler:
             self._horizontal_mode: bool = horizontal_mode
             self._stroke_mode: bool = False
             self._flipped: bool = flipped
-            self._screenshot_dir: str = screenshot_dir
 
-            self._shotTrees: list[api_pb2.Shot] = []
+            self._ss_dir: str = screenshot_dir
+            self._ss_buffer: Optional[p5.core.graphics.Graphics] = None
+            self._ss_scaling: int = 2000
+
+            self._shot_trees: list[api_pb2.Shot] = []
             self._active_shot_tree_idx: Optional[int] = None
 
             self._table_state: Optional[ff.TableState] = None
@@ -52,13 +56,17 @@ class ShowShotsServiceHandler:
         width = int(self._game_table.width * self._scaling)
         length = int(self._game_table.length * self._scaling)
 
+        ss_width = int(self._game_table.width * self._ss_scaling)
+        ss_length = int(self._game_table.length * self._ss_scaling)
+
         if self._horizontal_mode:
             width, length = length, width
+            ss_width, ss_length = ss_length, ss_width
 
         def _setup():
             size(width, length)
+            self._ss_buffer = create_graphics(ss_width, ss_length)
             ellipseMode(CENTER)
-            textAlign(CENTER, CENTER)
             if not self._stroke_mode:
                 noStroke()
 
@@ -70,44 +78,44 @@ class ShowShotsServiceHandler:
                 self._horizontal_mode,
                 self._flipped,
                 self._stroke_mode,
+                1 if self._stroke_mode else 4,
+                canvas=p5.renderer
             )
 
-            if self._shotTrees:
+            if self._shot_trees:
                 self._game_table.draw_shot_tree(
-                    self._shotTrees[self._active_shot_tree_idx],
+                    self._shot_trees[self._active_shot_tree_idx],
                     self._scaling * 2 if self._mac_mode else self._scaling,
                     self._horizontal_mode,
                     self._flipped,
-                    self._stroke_mode,
+                    3,
+                    canvas=p5.renderer
                 )
+
+            fill(255, 255, 255)
+            circle(30, 30, 50)
 
         def _key_released(event):
             if event.key == "RIGHT":
-                if self._shotTrees:
+                if self._shot_trees:
                     self.update_table_state(self._org_table_state)
                     self._active_shot_tree_idx = (self._active_shot_tree_idx + 1) % len(
-                        self._shotTrees
+                        self._shot_trees
                     )
-                    print(f"{self._active_shot_tree_idx + 1} / {len(self._shotTrees)}")
+                    print(f"{self._active_shot_tree_idx + 1} / {len(self._shot_trees)}")
             elif event.key == "LEFT":
-                if self._shotTrees:
+                if self._shot_trees:
                     self.update_table_state(self._org_table_state)
                     self._active_shot_tree_idx = (self._active_shot_tree_idx - 1) % len(
-                        self._shotTrees
+                        self._shot_trees
                     )
-                    print(f"{self._active_shot_tree_idx + 1} / {len(self._shotTrees)}")
+                    print(f"{self._active_shot_tree_idx + 1} / {len(self._shot_trees)}")
             elif event.key == "f" or event.key == "F":
                 self._stroke_mode = not self._stroke_mode
             elif event.key == "UP":
                 self._handle_shoot()
             elif event.key == "s" or event.key == "S":
-                os.makedirs(self._screenshot_dir, exist_ok=True)
-                p5.renderer.canvas.getSurface().makeImageSnapshot().save(
-                    os.path.join(
-                        self._screenshot_dir,
-                        time.strftime("%Y-%m-%d_%T") + ".png",
-                    )
-                )
+                self._handle_screenshot()
             elif event.key == "r" or event.key == "R":
                 self.update_table_state(self._org_table_state)
             elif event.key in [str(val) for val in range(1, 10)]:
@@ -126,7 +134,7 @@ class ShowShotsServiceHandler:
         )
 
     def update_shots_trees(self, shot_trees: list[api_pb2.Shot]):
-        self._shotTrees = shot_trees
+        self._shot_trees = shot_trees
         if shot_trees:
             self._active_shot_tree_idx = 0
 
@@ -139,22 +147,52 @@ class ShowShotsServiceHandler:
         self._org_table_state = table_state
         self._table_state = new_table_state
 
+    def _handle_screenshot(self):
+        os.makedirs(self._ss_dir, exist_ok=True)
+
+        self._ss_buffer.background(255)
+
+        self._game_table.draw(
+            self._ss_scaling,
+            self._horizontal_mode,
+            self._flipped,
+            self._stroke_mode,
+            3 if self._stroke_mode else 10,
+            canvas=self._ss_buffer.renderer,
+        )
+
+        if self._shot_trees:
+            self._game_table.draw_shot_tree(
+                self._shot_trees[self._active_shot_tree_idx],
+                self._ss_scaling,
+                self._horizontal_mode,
+                self._flipped,
+                10,
+                canvas=self._ss_buffer.renderer
+            )
+
+        self._ss_buffer.renderer.load_pixels()
+        s = self._ss_buffer.renderer.pimage
+        s.save(os.path.join(self._ss_dir, time.strftime("%Y-%m-%d_%T") + ".png"))
+
+        # save_canvas(os.path.join(self._ss_dir, time.strftime("%Y-%m-%d_%T") + ".png"), self._ss_buffer)
+
     def _handle_shoot(self):
         target: Vector2 = Vector2(
-            self._shotTrees[self._active_shot_tree_idx].ghostBall.x,
-            self._shotTrees[self._active_shot_tree_idx].ghostBall.y,
+            self._shot_trees[self._active_shot_tree_idx].ghostBall.x,
+            self._shot_trees[self._active_shot_tree_idx].ghostBall.y,
         )
         source: Vector2 = Vector2(
-            self._shotTrees[self._active_shot_tree_idx].posB1.x,
-            self._shotTrees[self._active_shot_tree_idx].posB1.y,
+            self._shot_trees[self._active_shot_tree_idx].posB1.x,
+            self._shot_trees[self._active_shot_tree_idx].posB1.y,
         )
 
         diff: Vector2 = target - source
         x_axis: Vector2 = Vector2(1, 0)
 
         angle = (
-            math.acos(diff.dot(x_axis) / (diff.length * x_axis.length)) * 180 / math.pi
-        ) + 180 % 360
+                        math.acos(diff.dot(x_axis) / (diff.length * x_axis.length)) * 180 / math.pi
+                ) + 180 % 360
 
         if diff.y < 0:
             angle = 360 - angle
@@ -167,8 +205,8 @@ class ShowShotsServiceHandler:
         params = ff.ShotParams(a, b, theta, phi, vel)
 
         if (
-            self._table_state.isPhysicallyPossible(params)
-            != ff.TableState.OK_PRECONDITION
+                self._table_state.isPhysicallyPossible(params)
+                != ff.TableState.OK_PRECONDITION
         ):
             print("Shot not possible")
         else:
