@@ -47,7 +47,6 @@ def main():
         window_pos=(600, 0),
         frames_per_second=120,
         scaling=350,
-        mac_mode=True,
         horizontal_mode=False,
         flipped=True,
     )
@@ -55,7 +54,6 @@ def main():
         window_pos=(100, 0),
         frames_per_second=120,
         scaling=350,
-        mac_mode=True,
         horizontal_mode=False,
         flipped=False,
         auto_play=False,
