@@ -289,7 +289,7 @@ class GameTable:
             p5.renderer = old_canvas
 
     def draw_shot_tree(self, shot_tree: api_pb2.Shot, scaling=200, horizontal_mode=False, flipped=False,
-                       stroke_weight=2, canvas=None, depth=1):
+                       stroke_weight=2, canvas=None, depth=1, draw_id_tags=True):
         if canvas:
             old_canvas = p5.renderer
             p5.renderer = canvas
@@ -312,12 +312,12 @@ class GameTable:
 
         # Leftmost
         lm = shot_tree.leftMost
-        stroke(*self.red_color)
+        stroke(*self.red_color) if flipped else stroke(*self.blue_color)
         circle(lm.x * scaling, lm.y * scaling, GameBall.RADIUS * 2 * scaling)
 
         # Rightmost
         rm = shot_tree.rightMost
-        stroke(*self.blue_color)
+        stroke(*self.blue_color) if flipped else stroke(*self.red_color)
         circle(rm.x * scaling, rm.y * scaling, GameBall.RADIUS * 2 * scaling)
 
         # GhostBall
@@ -327,44 +327,45 @@ class GameTable:
 
         if shot_tree.next.IsInitialized():
             # Lines
-            stroke(*self.red_color)
+            stroke(*self.red_color) if flipped else stroke(*self.blue_color)
             line(rm.x * scaling, rm.y * scaling, shot_tree.next.leftMost.x * scaling,
                  shot_tree.next.leftMost.y * scaling)
-            stroke(*self.blue_color)
+            stroke(*self.blue_color) if flipped else stroke(*self.red_color)
             line(lm.x * scaling, lm.y * scaling, shot_tree.next.rightMost.x * scaling,
                  shot_tree.next.rightMost.y * scaling)
 
-            # Id tag
-            stroke(*self.black_color)
-            push()
-            text_x_pos = shot_tree.ghostBall.x * scaling + (shot_tree.next.ghostBall.x - shot_tree.ghostBall.x) * scaling / 2
-            text_y_pos = shot_tree.ghostBall.y * scaling + (shot_tree.next.ghostBall.y - shot_tree.ghostBall.y) * scaling / 2
+            if draw_id_tags:
+                # Id tag
+                stroke(*self.black_color)
+                push()
+                text_x_pos = shot_tree.ghostBall.x * scaling + (shot_tree.next.ghostBall.x - shot_tree.ghostBall.x) * scaling / 2
+                text_y_pos = shot_tree.ghostBall.y * scaling + (shot_tree.next.ghostBall.y - shot_tree.ghostBall.y) * scaling / 2
 
-            mag = math.sqrt(text_x_pos**2 + text_y_pos**2)
+                mag = math.sqrt(text_x_pos**2 + text_y_pos**2)
 
-            offset_x = text_y_pos / mag * (scaling * 0.08)
-            offset_y = -text_x_pos / mag * (scaling * 0.08)
+                offset_x = text_y_pos / mag * (scaling * 0.08)
+                offset_y = -text_x_pos / mag * (scaling * 0.08)
 
-            text_x_pos += offset_x
-            text_y_pos += offset_y
+                text_x_pos += offset_x
+                text_y_pos += offset_y
 
-            translate(int(text_x_pos), int(text_y_pos))
-            if horizontal_mode:
-                rotate(-PI / 2)
+                translate(int(text_x_pos), int(text_y_pos))
+                if horizontal_mode:
+                    rotate(-PI / 2)
 
-            if flipped:
-                scale(1, -1)
+                if flipped:
+                    scale(1, -1)
 
-            text_align(CENTER, CENTER)
-            ts = int(scaling / 30)
-            textSize(ts)
-            fill(*GameBall.ball_colors[ff.Ball.EIGHT])
-            noStroke()
-            text(str(shot_tree.next.id), 0, ts * 0.80)
+                text_align(CENTER, CENTER)
+                ts = int(scaling / 30)
+                textSize(ts)
+                fill(*GameBall.ball_colors[ff.Ball.EIGHT])
+                noStroke()
+                text(str(shot_tree.next.id), 0, ts * 0.80)
+                pop()
+
             pop()
-
-            pop()
-            self.draw_shot_tree(shot_tree.next, scaling, horizontal_mode, flipped, stroke_weight, canvas, depth=depth+1)
+            self.draw_shot_tree(shot_tree.next, scaling, horizontal_mode, flipped, stroke_weight, canvas, depth=depth+1, draw_id_tags=draw_id_tags)
         else:
             pop()
 

@@ -164,8 +164,9 @@ class ShowShotsServiceHandler:
                 self._ss_scaling,
                 self._horizontal_mode,
                 self._flipped,
-                10,
-                canvas=self._ss_buffer.renderer
+                4,
+                canvas=self._ss_buffer.renderer,
+                draw_id_tags=False
             )
 
         save_canvas(os.path.join(self._ss_dir, time.strftime("%Y-%m-%d_%T") + ".png"), self._ss_buffer)
