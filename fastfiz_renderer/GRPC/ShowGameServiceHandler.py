@@ -152,7 +152,7 @@ class ShowGameServiceHandler:
             self._horizontal_mode,
             self._flipped,
             self._stroke_mode,
-            3 if self._stroke_mode else 10,
+            5 if self._stroke_mode else 10,
             [self._highlighted_ball],
             [self._highlighted_pocket],
             self._shot_params,

@@ -91,7 +91,7 @@ class GameBall:
         time_since_event_start = time_since_shot_start - cur_state.e_time
 
         def calc_sliding_displacement(delta_time: float) -> vmath.Vector2:
-            rotational_velocity: vmath.Vector3 = GameBall.RADIUS * vmath.Vector3(0, 0, cur_state.ang_vel.z).cross(
+            rotational_velocity: vmath.Vector3 = GameBall.RADIUS * vmath.Vector3(0, 0, 1).cross(
                 cur_state.ang_vel)
             relative_velocity = cur_state.vel + vmath.Vector2(rotational_velocity.x, rotational_velocity.y)
             self.velocity = cur_state.vel - delta_time * gravitational_const * sliding_friction_const * relative_velocity.normalize()
